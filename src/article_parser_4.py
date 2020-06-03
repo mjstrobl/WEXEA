@@ -87,7 +87,7 @@ def process_file(filename, output_filename):
                     elif file_entity_gender == 'female':
                         all_corefs['her'] = file_entity
                         all_corefs['she'] = file_entity
-                    f_out.write('\n')
+                    #f_out.write('\n')
                 else:
                     idx = 0
                     while True:
@@ -180,8 +180,8 @@ if __name__ == "__main__":
 
     outputpath = config['outputpath']
     dictionarypath = outputpath + 'dictionaries/'
-    el_articlepath = outputpath + 'neural_el_articles/'
-    final_articlepath = outputpath + 'neural_final_articles/'
+    el_articlepath = outputpath + 'el_articles/'
+    final_articlepath = outputpath + 'final_articles/'
 
     if not os.path.isdir(final_articlepath):
         try:

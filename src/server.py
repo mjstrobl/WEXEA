@@ -5,29 +5,18 @@ import threading
 import webbrowser
 from http.server import HTTPServer,SimpleHTTPRequestHandler
 
-#ARTICLE_PATH = "/media/michi/Data/wikipedia/coref_articles/articles/"
-#ORIGINAL_ARTICLE_PATH = "/media/michi/Data/wikipedia/original_articles/articles/"
-TITLE2FILENAME = "/media/michi/Data/wikipedia/coref_articles/articles/title2filename.json"
-TITLE2ID = "/media/michi/Data/wikipedia/original_articles/dictionaries/title2Id.json"
+config = json.load(open('config/config.json'))
+outputpath = config['outputpath']
+
+TITLE2FILENAME_PATH = outputpath + "dictionaries/title2filename.json"
+TITLE2ID_PATH = outputpath + "dictionaries/title2Id.json"
 WIKILINK = 'https://en.wikipedia.org/?curid='
 
-FILE = 'frontend.html'
+FILE = '../frontend.html'
 PORT = 8080
 
-'''filename2title = json.load(open(FILENAME2TITLE))
-title2filename = {}
-
-for filename in filename2title:
-    title = filename2title[filename]
-    filename = filename.replace(ORIGINAL_ARTICLE_PATH,ARTICLE_PATH)
-    title2filename[title] = filename
-
-
-with open(ARTICLE_PATH + 'title2filename.json' ,'w') as f:
-    json.dump(title2filename,f)'''
-
-title2filename = json.load(open(TITLE2FILENAME))
-title2id = json.load(open(TITLE2ID))
+title2filename = json.load(open(TITLE2FILENAME_PATH))
+title2id = json.load(open(TITLE2ID_PATH))
 
 def process_line(line,doc, tag, text):
     while True:
@@ -75,10 +64,9 @@ def process_line(line,doc, tag, text):
 
     text(line + " ")
 
-def create_html_paragraph(paragraph,doc, tag, text):
+def create_html_paragraph(line,doc, tag, text):
     with tag('p'):
-        for line in paragraph:
-            process_line(line,doc,tag,text)
+        process_line(line,doc,tag,text)
 
 def create_html(title2filename,title):
 
@@ -91,8 +79,7 @@ def create_html(title2filename,title):
     else:
         with tag('h1'):
             text(title)
-        with open(title2filename[title]) as f:
-            current_paragraph = []
+        with open(title2filename[title].replace("original_articles","final_articles")) as f:
             for line in f:
                 line = line.strip()
                 if line.startswith('==='):
@@ -103,15 +90,8 @@ def create_html(title2filename,title):
                     line = line.replace('=', '')
                     with tag('h2'):
                         text(line)
-                elif len(line) == 0:
-                    if len(current_paragraph) > 0:
-                        create_html_paragraph(current_paragraph,doc,tag,text)
-                    current_paragraph = []
                 else:
-                    current_paragraph.append(line)
-
-        if len(current_paragraph) > 0:
-            create_html_paragraph(current_paragraph,doc,tag,text)
+                    create_html_paragraph(line, doc, tag, text)
 
     result = indent(doc.getvalue())
     return result

@@ -27,6 +27,10 @@ This version does not require to download Tensorflow and should be slightly fast
 Originally we used a neural entity linker from https://github.com/nitishgupta/neural-el. However, due to compatibility issues with more modern Tensorflow versions, we removed it. Instead the basic entity linker is used by default.
 
 
+## Visualization
+
+server.py starts a server and opens a website that can be used to visualize an article with Wikipedia links (blue), WEXEA links (red) and unknown entities (green).
+
 ## Citation (bibtex)
 
 @InProceedings{strobl-trabelsi-zaiane:2020:LREC,

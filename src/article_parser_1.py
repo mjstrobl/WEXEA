@@ -816,6 +816,11 @@ if (__name__ == "__main__"):
     parser.parse(wikipath)
     print('done')
 
+    title2filename = {}
+    for filename in filename2title:
+        title2filename[filename2title[filename]] = filename
+
+
     with open(dictionarypath + 'aliases.json','w') as f:
         json.dump(aliases,f)
     with open(dictionarypath + 'disambiguations_other.json', 'w') as f:
@@ -832,6 +837,8 @@ if (__name__ == "__main__"):
         json.dump(surnames, f)
     with open(dictionarypath + 'filename2title.json', 'w') as f:
         json.dump(filename2title, f)
+    with open(dictionarypath + 'title2filename.json', 'w') as f:
+        json.dump(title2filename, f)
     with open(dictionarypath + 'articles.json', 'w') as f:
         json.dump(articles, f)
     with open(dictionarypath + 'links.json', 'w') as f:

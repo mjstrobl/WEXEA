@@ -31,6 +31,10 @@ Originally we used a neural entity linker from https://github.com/nitishgupta/ne
 
 server.py starts a server and opens a website that can be used to visualize an article with Wikipedia links (blue), WEXEA links (red) and unknown entities (green).
 
+## Hardware requirements
+
+32GB of RAM are required (it may work with 16, but not tested) and it should take around 48 hours to finish with a full Wikipedia dump.
+
 ## Citation (bibtex)
 
 @InProceedings{strobl-trabelsi-zaiane:2020:LREC,

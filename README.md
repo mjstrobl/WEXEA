@@ -13,6 +13,8 @@ WEXEA runs through several stages of article annotation and the final articles c
 Articles are separately stored in a folder named after the first 3 letters of the title (lowercase) and sentences are split up leading to one sentence per line.
 Annotations follow the Wikipedia conventions, just the type of the annotation is added at the end.
 
+This work is still in progress, please email me (mstrobl@ualberta.ca) if you need help or if you have ideas for improvements.
+
 ## With basic Entity Linker
 This version does not require to download Tensorflow and should be slightly faster. The Entity Linker chooses the candidate with the highest link probability.
 

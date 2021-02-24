@@ -37,6 +37,15 @@ server.py starts a server and opens a website that can be used to visualize an a
 
 32GB of RAM are required (it may work with 16, but not tested) and it should take around 48 hours to finish with a full Wikipedia dump.
 
+## Issues
+
+There are a few issues I'm working on:
+
+- Memory requirement is too high. It does not make sense to keep all dictionaries in memory.
+- Sentence break up is not good enough. The nltk sentence tokenizer has to be replaced.
+- Our rule-based approach of finding new entities, which cannot be found in Wikipedia can be improved.
+- 48 hours is too slow. Once the Wikipedia dump (XML) is parsed, it should be possible to parallelize article processing to speed up the approach significantly.
+
 ## Citation (bibtex)
 
 @InProceedings{strobl-trabelsi-zaiane:2020:LREC,

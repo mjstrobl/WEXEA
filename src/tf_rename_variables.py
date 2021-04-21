@@ -38,7 +38,7 @@ def rename(checkpoint_dir, replace_from, replace_to, add_prefix, dry_run):
             # Save the variables
             saver = tf.train.Saver()
             sess.run(tf.global_variables_initializer())
-            saver.save(sess, "/media/michi/Data/non_essential_repos/neural-el/neural-el_resources/models/new_C.model")
+            saver.save(sess, "<path to new_C.model>")
 
 
 def main(argv):

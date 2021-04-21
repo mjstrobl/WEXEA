@@ -20,14 +20,19 @@ This version does not require to download Tensorflow and should be slightly fast
 
 1. Install requirements from requirements.txt
 2. In config/config.json, provide path of latest wiki dump (xml file) and output path (make sure the output folder does not exist yet, it will be created).
-3. Make annotate.sh executable: "chmod 755 annotate.sh"
-4. Run annotate.sh with ./annotate.sh
+3. Make annotate_basic.sh executable: "chmod 755 annotate_basic.sh"
+4. Run annotate_basic.sh with ./annotat_basice.sh
 
 
 ## With neural Entity Linker (as in LREC 2020 paper)
 
-Originally we used a neural entity linker from https://github.com/nitishgupta/neural-el. However, due to compatibility issues with more modern Tensorflow versions, we removed it. Instead the basic entity linker is used by default.
+This version uses the neural Entity Linker from https://github.com/nitishgupta/neural-el with small modifications (mainly a predefined set of candidates per entity mention with entities linked in the current article is used and the NER module is removed).
 
+1. Install from requirements.txt
+2. Download the resources folder from https://github.com/nitishgupta/neural-el and set path to models in src/entity_linker/configs/config.ini
+3. In config/config.json, provide path of latest wiki dump (xml file) and output path.
+4. Make annotate.sh executable: "chmod 755 annotate.sh"
+5. Run annotate.sh with ./annotate.sh
 
 ## Visualization
 

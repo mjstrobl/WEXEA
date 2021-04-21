@@ -21,7 +21,7 @@ This version does not require to download Tensorflow and should be slightly fast
 1. Install requirements from requirements.txt
 2. In config/config.json, provide path of latest wiki dump (xml file) and output path (make sure the output folder does not exist yet, it will be created).
 3. Make annotate_basic.sh executable: "chmod 755 annotate_basic.sh"
-4. Run annotate_basic.sh with ./annotat_basic.sh
+4. Run annotate_basic.sh with ./annotate_basic.sh
 
 
 ## With neural Entity Linker (as in LREC 2020 paper)

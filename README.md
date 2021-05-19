@@ -28,11 +28,16 @@ This version does not require to download Tensorflow and should be slightly fast
 
 This version uses the neural Entity Linker from https://github.com/nitishgupta/neural-el with small modifications (mainly a predefined set of candidates per entity mention with entities linked in the current article is used and the NER module is removed).
 
+
+https://gist.github.com/batzner/7c24802dd9c5e15870b4b56e22135c96
+
+
 1. Install from requirements.txt
 2. Download the resources folder from https://github.com/nitishgupta/neural-el and set path to models in src/entity_linker/configs/config.ini
 3. In config/config.json, provide path of latest wiki dump (xml file) and output path.
-4. Make annotate.sh executable: "chmod 755 annotate.sh"
-5. Run annotate.sh with ./annotate.sh
+4. Since neural-el used models from a tensorflow version with variable names that are not compatible with more recent versions, run src/tf_rename_variables.py with approprite parameters.
+5. Make annotate.sh executable: "chmod 755 annotate.sh"
+6. Run annotate.sh with ./annotate.sh
 
 ## Visualization
 

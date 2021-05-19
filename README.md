@@ -18,7 +18,7 @@ This work is still in progress, please email me (mstrobl@ualberta.ca) if you nee
 ## With basic Entity Linker
 This version does not require to download Tensorflow and should be slightly faster. The Entity Linker chooses the candidate with the highest link probability.
 
-1. Install requirements from requirements.txt
+1. Install requirements from requirements_basic.txt
 2. In config/config.json, provide path of latest wiki dump (xml file) and output path (make sure the output folder does not exist yet, it will be created).
 3. Make annotate_basic.sh executable: "chmod 755 annotate_basic.sh"
 4. Run annotate_basic.sh with ./annotate_basic.sh

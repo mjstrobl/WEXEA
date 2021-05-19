@@ -1,3 +1,4 @@
 unidecode
 gender-guesser
 yattag
+tensorflow==1.12.1

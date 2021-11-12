@@ -1,4 +1,6 @@
 {
     "wikipath":"",
     "outputpath":"",
+    "logging_path": "",
+    "processes": 6
 }

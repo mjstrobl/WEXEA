@@ -35,6 +35,32 @@ server.py starts a server and opens a website that can be used to visualize an a
 
 32GB of RAM are required (it may work with 16, but not tested) and it should take around 48 hours to finish with a full Wikipedia dump.
 
+## Parsers
+
+Time consumption was measured when running on a Ryzen 7 2700X with 64GB of memory. Data was read from and written to a hard drive.
+
+### Parser 1 (~2h 45 min):
+Finds redirect articles as well as redirects mentioned in articles.
+
+Dictionaries:
+* title2id: Matching Wiki Ids with their corresponding titles.
+* redirects: Stores redirects and their current titles.
+* filename2title: Stores filenames, which is used by the next parser.
+
+### Parser 2 (~1h 45 mins with 6 processes / ~6,000,000 articles to process)
+Removes most Wiki markup, irrelevant articles (e.g. lists or stubs), extracts aliases and separates disambiguation pages.
+
+Dictionaries:
+* aliases: Alias dictionary, storing all names each entity was linked with and stores the number of each appearance.
+* disambiguations: List of disambiguation pages (one for geo, human, numbers and others)
+* surnames
+* given names
+* categories: Stores all categories of each article.
+* links: Stores the number of times each article appears in each article. IDs instead of titles are used here.
+* stubs: Stub articles.
+
+A number of processes can be set to speed up the parsing process of all articles. However, each process consumes around 7.5GB of memory. It is necessary to run `merge_dictionaries.py` afterwards.
+
 ## Citation (bibtex)
 
 @InProceedings{strobl-trabelsi-zaiane:2020:LREC,

@@ -292,10 +292,6 @@ def test():
                             client, props, annotators)
 
 if (__name__ == "__main__"):
-
-    #test()
-    exit(0)
-
     config = json.load(open('config/config.json'))
     num_processes = config['processes']
     wikipath = config['wikipath']
@@ -313,7 +309,7 @@ if (__name__ == "__main__"):
     redirects_reverse = json.load(open(dictionarypath + 'redirects_reverse.json'))
     aliases_reverse = json.load(open(dictionarypath + 'aliases_reverse.json'))
     most_popular_entities = json.load(open(dictionarypath + 'most_popular_entities.json'))
-    entities_sorted = json.load(open(dictionarypath + 'entities_sorted.json'))
+    #entities_sorted = json.load(open(dictionarypath + 'entities_sorted.json'))
     disambiguations_human = json.load(open(dictionarypath + 'disambiguations_human.json'))
     disambiguations_geo = json.load(open(dictionarypath + 'disambiguations_geo.json'))
     title2Id = json.load(open(dictionarypath + 'title2Id_pruned.json'))
@@ -351,7 +347,7 @@ if (__name__ == "__main__"):
     del disambiguations_geo
     del disambiguations_human
     del links
-    del entities_sorted
+    #del entities_sorted
 
     for job in jobs:
         job.join()

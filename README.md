@@ -39,7 +39,7 @@ server.py starts a server and opens a website that can be used to visualize an a
 
 Time consumption was measured when running on a Ryzen 7 2700X with 64GB of memory. Data was read from and written to a hard drive.
 
-### Parser 1 (~2h 45 min):
+### Parser 1 (~2h 45 min / ~4.6GB memory in total / 20,993,369 articles currently):
 Finds redirect articles as well as redirects mentioned in articles.
 
 Dictionaries:
@@ -59,7 +59,7 @@ Dictionaries:
 * links: Stores the number of times each article appears in each article. IDs instead of titles are used here.
 * stubs: Stub articles.
 
-A number of processes can be set to speed up the parsing process of all articles. However, each process consumes around 7.5GB of memory. It is necessary to run `merge_dictionaries.py` afterwards.
+A number of processes can be set to speed up the parsing process of all articles. However, each process consumes around 7.5GB of memory.
 
 ## Citation (bibtex)
 

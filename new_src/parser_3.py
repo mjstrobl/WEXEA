@@ -54,6 +54,7 @@ def process_article(text,
         line = line.strip()
 
         if len(line) == 0:
+            complete_content += '\n'
             continue
 
         if any(line.lower().startswith('[[' + ignore + ':') for ignore in IGNORED_NAMESPACES):

@@ -79,7 +79,7 @@ def process_article(text,
                     if len(indices.intersection(set([j for j in range(start, start + len(alias))]))) == 0:
                         positions.append((start,None,alias,ner))
         except Exception as e:
-            print(e)
+            pass
 
 
         positions.sort(key=lambda x: x[0])
@@ -237,7 +237,7 @@ def process_articles(process_index,
                         print("Process " + str(process_index) + ', articles: ' + str(counter_all) + ", avg time: " +
                               str(time_per_article), end='\r')
             except Exception as e:
-                print(e)
+                pass
 
 
     print("Process " + str(process_index) + ', articles processed: ' + str(counter_all))

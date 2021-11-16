@@ -334,6 +334,7 @@ def merge_all_dictionaries(all_titles,title2Id):
 
     cleaned_aliases = {}
     aliases_reverse = {}
+
     for alias in aliases:
         if len(alias) <= 1:
             continue
@@ -355,10 +356,14 @@ def merge_all_dictionaries(all_titles,title2Id):
             if appearances > 1:
                 if entity not in aliases_reverse:
                     aliases_reverse[entity] = {}
-                aliases_reverse[entity][alias] = appearances
+                if alias not in aliases_reverse[entity]:
+                    aliases_reverse[entity][alias] = 0
+                aliases_reverse[entity][alias] += appearances
                 if alias not in cleaned_aliases:
                     cleaned_aliases[alias] = {}
-                cleaned_aliases[alias][entity] = appearances
+                if entity not in cleaned_aliases[alias]:
+                    cleaned_aliases[alias][entity] = 0
+                cleaned_aliases[alias][entity] += appearances
 
     aliases = cleaned_aliases
 

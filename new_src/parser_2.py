@@ -283,6 +283,9 @@ def merge_all_dictionaries(all_titles,title2Id):
         os.remove(dictionarypath + str(i) + '_links.json')
         os.remove(dictionarypath + str(i) + '_filename2title_2.json')'''
 
+    with open(dictionarypath + 'aliases.json', 'w') as f:
+        json.dump(aliases, f)
+    exit(0)
     with open(dictionarypath + 'disambiguations_other.json', 'w') as f:
         json.dump(other_disambiguations, f)
     with open(dictionarypath + 'disambiguations_human.json', 'w') as f:
@@ -365,8 +368,6 @@ def merge_all_dictionaries(all_titles,title2Id):
                     cleaned_aliases[alias][entity] = 0
                 cleaned_aliases[alias][entity] += appearances
 
-    aliases = cleaned_aliases
-
     aliases_pruned = {}
     aliases_reverse_pruned = {}
     most_popular_entities = []
@@ -443,8 +444,8 @@ def merge_all_dictionaries(all_titles,title2Id):
         json.dump(new_title2Id, f)
     with open(dictionarypath + 'id2title_pruned.json', 'w') as f:
         json.dump(id2title, f)
-    with open(dictionarypath + 'aliases.json', 'w') as f:
-        json.dump(aliases, f)
+    with open(dictionarypath + 'cleaned_aliases.json', 'w') as f:
+        json.dump(cleaned_aliases, f)
     with open(dictionarypath + 'aliases_pruned.json', 'w') as f:
         json.dump(aliases_pruned, f)
     with open(dictionarypath + 'aliases_reverse.json', 'w') as f:

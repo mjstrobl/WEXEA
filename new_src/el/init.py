@@ -45,8 +45,6 @@ for alias in aliases_lower:
 with open(wexea_directory + 'dictionaries/priors_lower.json','w') as f:
     json.dump(priors_lower,f)
 
-exit(0)
-
 person_candidates = {}
 
 with open('../../data/persons.txt') as f:

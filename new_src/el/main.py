@@ -35,7 +35,7 @@ person_candidates = json.load(open(wexea_directory + 'dictionaries/person_candid
 stubs = json.load(open(wexea_directory + 'dictionaries/stubs.json'))
 priors_lower = json.load(open(wexea_directory + 'dictionaries/priors_lower.json'))
 
-MAX_NUM_CANDIDATES = 30
+MAX_NUM_CANDIDATES = 50
 EPOCHS = 10
 MAX_SENT_LENGTH = 128
 
@@ -95,7 +95,7 @@ def create_mention_strings(mention):
 
     return mentions
 
-def process(document):
+def process(document,type=''):
     sentence_a = []
     sentence_b = []
     ps = []
@@ -135,6 +135,10 @@ def process(document):
             id = int(tuple[1])
             end = tuple[2]
 
+            title = ''
+            if str(id) in id2title:
+                title = id2title[str(id)]
+
             #if str(id) in id2title:
             #    print("Title: " + id2title[str(id)])
 
@@ -168,6 +172,7 @@ def process(document):
                 candidates = priors_lower[mention_lower_cleaned]
 
             mandatory_additions = 0
+            correct_in_mandatory_additions = False
 
             unique_candidates = set()
             for candidate in candidates:
@@ -175,13 +180,10 @@ def process(document):
 
             if mention in redirects:
                 candidates.insert(0,(redirects[mention],3.0))
-                mandatory_additions += 1
             if mention in stubs:
                 candidates.insert(0,(mention, 2.0))
-                mandatory_additions += 1
             if mention in title2id and mention not in unique_candidates:
                 candidates.insert(0,(mention,1.0))
-                mandatory_additions += 1
 
 
 
@@ -190,6 +192,8 @@ def process(document):
                 for person in persons:
                     if person in title2id:
                         candidates.insert(0,(person,1.0))
+                        if person == title:
+                            correct_in_mandatory_additions = True
                         mandatory_additions += 1
 
             unique_candidates = set()
@@ -203,10 +207,17 @@ def process(document):
                 candidates = new_candidates
 
             if len(candidates) > 0:
-
                 test_dataset['ids'].append(id)
-                if len(candidates) > MAX_NUM_CANDIDATES + mandatory_additions:
-                    candidates = candidates[:MAX_NUM_CANDIDATES + mandatory_additions]
+
+                current_max_candidates = MAX_NUM_CANDIDATES
+                if type == 'train':
+                    current_max_candidates = min(10,current_max_candidates)
+                    if not correct_in_mandatory_additions:
+                        candidates = candidates[mandatory_additions:]
+                        mandatory_additions = 0
+
+                if len(candidates) > current_max_candidates + mandatory_additions:
+                    candidates = candidates[:current_max_candidates + mandatory_additions]
 
                 candidate_l = []
 
@@ -228,8 +239,8 @@ def process(document):
 
 
                     candidate = candidates[j]
-                    #abstract = get_abstract(candidate[0])
-                    abstract = ''
+                    abstract = get_abstract(candidate[0])
+                    #abstract = ''
                     sentence_a.append(context)
                     sentence_b.append(abstract)
                     prior = candidate[1]
@@ -292,10 +303,8 @@ def process(document):
                 if mention.lower() in person_candidates:
                     print("mention in pc")
                 else:
-                    print("mention not in pc")'''
-
-
-                print()
+                    print("mention not in pc")
+                print()'''
 
 
 

@@ -19,20 +19,25 @@ class OurDataset(torch.utils.data.Dataset):
         return len(self.encodings.input_ids)
 
 RE_LINKS = re.compile(r'\[{2}(.*?)\]{2}', re.DOTALL | re.UNICODE)
-wexea_directory = '/media/michi/Data/wexea/new/'
+
+config = json.load(open('../../config/config.json'))
+outputpath = config['outputpath']
+
+wexea_directory = outputpath
 
 id2title = json.load(open(wexea_directory + 'dictionaries/id2title.json'))
 title2id = json.load(open(wexea_directory + 'dictionaries/title2Id.json'))
 title2filename = json.load(open(wexea_directory + 'dictionaries/title2filename.json'))
 #aliases = json.load(open(wexea_directory + 'dictionaries/aliases_pruned.json'))
-priors = json.load(open(wexea_directory + 'dictionaries/priors_sorted.json'))
+#priors = json.load(open(wexea_directory + 'dictionaries/priors_sorted.json'))
 redirects = json.load(open(wexea_directory + 'dictionaries/redirects.json'))
-
+person_candidates = json.load(open(wexea_directory + 'dictionaries/person_candidates.json'))
 stubs = json.load(open(wexea_directory + 'dictionaries/stubs.json'))
-aliases = json.load(open(wexea_directory + 'dictionaries/aliases.json'))
+priors_lower = json.load(open(wexea_directory + 'dictionaries/priors_lower.json'))
 
-MAX_NUM_CANDIDATES = 3
+MAX_NUM_CANDIDATES = 10
 EPOCHS = 10
+MAX_SENT_LENGTH = 128
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
 num_added_toks = tokenizer.add_tokens(["<e>","</e>"])
@@ -41,7 +46,11 @@ print('We have added', num_added_toks, 'tokens')
 model = BertForNextSentencePrediction.from_pretrained('bert-base-cased')
 model.resize_token_embeddings(len(tokenizer))
 
+ABSTRACTS = {}
+
 def get_abstract(title):
+    if title in ABSTRACTS:
+        return ABSTRACTS[title]
     try:
         with open(title2filename[title]) as f:
             for line in f:
@@ -63,12 +72,28 @@ def get_abstract(title):
                         else:
                             break
 
+                    ABSTRACTS[title] = line
                     return line
 
     except:
         pass
     return ""
 
+def create_mention_strings(mention):
+    mentions = [mention]
+    words = mention.split()
+    another_mention = ''
+    for word in words:
+        if len(word) > 1:
+            another_mention += word[0].upper() + word[1:].lower() + ' '
+        else:
+            another_mention += word[0].upper() + ' '
+
+    mentions.append(another_mention.strip())
+
+    mentions.append(mention.lower())
+
+    return mentions
 
 def process(document):
     sentence_a = []
@@ -92,7 +117,17 @@ def process(document):
     match_id = 0
     not_match_id = 0
 
-    for tuple in document:
+    one_candidate_or_highest_prior_matching = 0
+
+    for i in range(len(document)):
+        tuple = document[i]
+        sentence_before = []
+        sentence_after = []
+        if i > 0:
+            sentence_before = document[i-1][0]
+        if i < len(document) - 1:
+            sentence_after = document[i+1][0]
+
         sentence = tuple[0]
         mentions = tuple[1]
         for tuple in mentions:
@@ -100,53 +135,84 @@ def process(document):
             id = int(tuple[1])
             end = tuple[2]
 
+            #if str(id) in id2title:
+            #    print("Title: " + id2title[str(id)])
+
             mention = ' '.join(sentence[start:end])
             current_text = (sentence[:start],mention, sentence[end:])
 
             context = ' '.join(current_text[0]) + ' <e>' + current_text[1] + '</e> ' + ' '.join(current_text[2])
             context = context.strip()
 
+            if len(sentence_before) + len(sentence) < MAX_SENT_LENGTH:
+                sentence_before_str = ' '.join(sentence_before)
+                sentence_after_str = ' '.join(sentence_after)
+                context = sentence_before_str + ' ' + context + ' ' + sentence_after_str
+
+
+
             test_dataset['contexts'].append(context)
 
 
-            candidates = []
-            if mention in priors:
-                candidates.extend(priors[mention])
-            if mention.lower() in priors:
-                candidates.extend(priors[mention.lower()])
-            elif mention[0].upper() + mention[1:].lower() in priors:
-                candidates.extend(priors[mention[0].upper() + mention[1:].lower()])
-
-            if mention in redirects:
-                candidates.append((redirects[mention],3.0))
-            if mention in stubs:
-                candidates.append((mention, 2.0))
+            '''candidates = []
+            potential_mentions = create_mention_strings(mention)
+            for potential_mention in potential_mentions:
+                if potential_mention in priors:
+                    candidates.extend(priors[potential_mention])
 
             new_candidates = []
-            seen = set()
-            for candidate in candidates:
-                name = candidate[0]
-                p = candidate[1]
-
-                if name not in seen:
-                    new_candidates.append((name,p))
-                    seen.add(name)
+            already_seen_candidates = set()
+            for tuple in candidates:
+                candidate = tuple[0]
+                if candidate not in already_seen_candidates:
+                    already_seen_candidates.add(candidate)
+                    new_candidates.append(tuple)
 
             candidates = new_candidates
+            candidates.sort(key=lambda x:x[1],reverse=True)'''
 
+            candidates = []
+            if mention.lower() in priors_lower:
+                candidates = priors_lower[mention.lower()]
+
+            mandatory_additions = 0
+
+            unique_candidates = set()
+            for candidate in candidates:
+                unique_candidates.add(candidate[0])
+
+            if mention in redirects:
+                candidates.insert(0,(redirects[mention],3.0))
+                mandatory_additions += 1
+            if mention in stubs:
+                candidates.insert(0,(mention, 2.0))
+                mandatory_additions += 1
+            if mention in title2id and mention not in unique_candidates:
+                candidates.insert(0,(mention,1.0))
+                mandatory_additions += 1
+
+            if mention.lower() in person_candidates:
+                persons = person_candidates[mention.lower()]
+                for person in persons:
+                    if person in title2id:
+                        candidates.insert(0,(person,1.0))
+                        mandatory_additions += 1
+
+            unique_candidates = set()
             if len(candidates) > 0:
                 new_candidates = []
                 for candidate in candidates:
-                    if candidate[0] in title2id:
+                    if candidate[0] in title2id and candidate[0] not in unique_candidates:
                         new_candidates.append(candidate)
+                        unique_candidates.add(candidate[0])
 
                 candidates = new_candidates
 
             if len(candidates) > 0:
 
                 test_dataset['ids'].append(id)
-                if len(candidates) > MAX_NUM_CANDIDATES:
-                    candidates = candidates[:MAX_NUM_CANDIDATES]
+                if len(candidates) > MAX_NUM_CANDIDATES + mandatory_additions:
+                    candidates = candidates[:MAX_NUM_CANDIDATES + mandatory_additions]
 
                 candidate_l = []
 
@@ -162,9 +228,14 @@ def process(document):
 
                         not_match_id += 1
 
+                got_true_candidate = False
+                for j in range(len(candidates)):
 
-                for candidate in candidates:
+
+
+                    candidate = candidates[j]
                     abstract = get_abstract(candidate[0])
+                    #abstract = ''
                     sentence_a.append(context)
                     sentence_b.append(abstract)
                     prior = candidate[1]
@@ -185,19 +256,53 @@ def process(document):
 
                     if title2id[candidate[0]] == id:
                         labels.append(1)
-                        found += 1
+
+                        got_true_candidate = True
+                        if j == 0:
+                            one_candidate_or_highest_prior_matching += 1
                     else:
                         labels.append(0)
                     candidate_l.append((abstract, candidate[0], candidate[1]))
+
+                if got_true_candidate:
+                    found += 1
+                else:
+                    '''print(context)
+                    print(candidates)
+                    print(mention)
+                    if str(id) in id2title:
+                        title = id2title[str(id)]
+                        print(title)
+                    else:
+                        print('title not found')
+                    print()'''
+
+
+
+
+                    not_found += 1
                 test_dataset['candidates'].append(candidate_l)
                 if len(candidate_l) == 1:
                     mention_single += 1
             else:
                 not_found += 1
+
+                '''print(context)
+                if str(id) in id2title:
+                    title = id2title[str(id)]
+                    print(title)
+                else:
+                    print('title not found')
+                print(id)
+                print(mention)
+                print()'''
+
+
+
                 test_dataset['ids'].append(id)
                 test_dataset['candidates'].append([])
 
-    inputs = tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=128, truncation=True,padding='max_length')
+    inputs = tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=MAX_SENT_LENGTH, truncation=True,padding='max_length')
     inputs['labels'] = torch.LongTensor([labels]).T
     inputs['priors'] = torch.FloatTensor([ps]).T
     inputs['redirects'] = torch.FloatTensor([res]).T
@@ -214,6 +319,20 @@ def process(document):
     print("mention single: " + str(mention_single))
     print("match title: " + str(match_id))
     print("not match title: " + str(not_match_id))
+    print("one_candidate_or_highest_prior_matching: " + str(one_candidate_or_highest_prior_matching))
+    print("Total: " + str(len(labels)))
+    print("test_dataset lengths: " + str(len(test_dataset['contexts'])) + ", " + str(len(test_dataset['ids'])) + ", " + str(len(test_dataset['candidates'])))
+
+    zeros = 0
+    ones = 0
+    for i in range(len(labels)):
+        if labels[i] == 0:
+            zeros += 1
+        else:
+            ones += 1
+
+    print("zeros: " + str(zeros))
+    print("ones: " + str(ones))
 
     return dataset,test_dataset
 
@@ -410,10 +529,10 @@ def evaluate(loader):
     print("precision: %f, recall: %f, f1: %f" % (precision, recall, f1))
     print("tp: %d, fp: %d, fn: %d" % (tp, fp, fn))
 
-
-dataset_train, test_dataset_train = get_dataset(type='train')
 dataset_dev, test_dataset_dev = get_dataset(type='dev')
 dataset_test, test_dataset_test = get_dataset(type='test')
+dataset_train, test_dataset_train = get_dataset(type='train')
+
 
 loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=16, shuffle=True)
 loader_dev = torch.utils.data.DataLoader(dataset_dev, batch_size=16, shuffle=False)
@@ -476,6 +595,8 @@ for epoch in range(EPOCHS):
 
     print("evaluate")
     evaluate(loader_dev)
+    print("test dev")
+    run_test(test_dataset_dev)
 
 
 # test_dataset = {'contexts':[], 'candidates':[], 'titles':[]}

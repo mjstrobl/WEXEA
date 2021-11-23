@@ -375,7 +375,7 @@ def get_dataset(type=None):
             # process(current_sentence, mentions)
             document.append((current_sentence, mentions))
 
-        return process(document)
+        return process(document,type=type)
 
 def metrics(preds, out_label_ids):
     tp = 0

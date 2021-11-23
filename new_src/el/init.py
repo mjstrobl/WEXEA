@@ -12,7 +12,7 @@ filename2title = json.load(open(wexea_directory + 'dictionaries/filename2title_2
 for filename in filename2title:
     title2filename[filename2title[filename]] = filename
 
-with open(wexea_directory + 'dictionaries/title2filename.json') as f:
+with open(wexea_directory + 'dictionaries/title2filename.json','w') as f:
     json.dump(title2filename,f)
 
 

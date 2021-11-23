@@ -339,7 +339,7 @@ def process(document):
 
 def get_dataset(type=None):
     print("get: " + type)
-    filename = '/media/michi/Data/datasets/el/datasets/aida_' + type + ".txt"
+    filename = '../../data/aida_' + type + ".txt"
     with open(filename) as f:
         current_sentence = []
         document = []

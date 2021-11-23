@@ -15,13 +15,6 @@ for filename in filename2title:
 with open(wexea_directory + 'dictionaries/title2filename.json','w') as f:
     json.dump(title2filename,f)
 
-
-exit(0)
-
-
-
-
-
 persons = json.load(open('../../data/persons.json'))
 person_candidates = {}
 

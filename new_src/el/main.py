@@ -35,7 +35,7 @@ person_candidates = json.load(open(wexea_directory + 'dictionaries/person_candid
 stubs = json.load(open(wexea_directory + 'dictionaries/stubs.json'))
 priors_lower = json.load(open(wexea_directory + 'dictionaries/priors_lower.json'))
 
-MAX_NUM_CANDIDATES = 10
+MAX_NUM_CANDIDATES = 30
 EPOCHS = 10
 MAX_SENT_LENGTH = 128
 
@@ -149,31 +149,23 @@ def process(document):
                 sentence_after_str = ' '.join(sentence_after)
                 context = sentence_before_str + ' ' + context + ' ' + sentence_after_str
 
+            mention_parts = mention.lower().split()
+            mention_lower_cleaned = ''
+            for part in mention_parts:
+                if len(part) == 2 and part[1] == '.':
+                    mention_lower_cleaned += ''
+                else:
+                    mention_lower_cleaned += ' ' + part
 
+            mention_lower_cleaned = mention_lower_cleaned.strip()
 
             test_dataset['contexts'].append(context)
-
-
-            '''candidates = []
-            potential_mentions = create_mention_strings(mention)
-            for potential_mention in potential_mentions:
-                if potential_mention in priors:
-                    candidates.extend(priors[potential_mention])
-
-            new_candidates = []
-            already_seen_candidates = set()
-            for tuple in candidates:
-                candidate = tuple[0]
-                if candidate not in already_seen_candidates:
-                    already_seen_candidates.add(candidate)
-                    new_candidates.append(tuple)
-
-            candidates = new_candidates
-            candidates.sort(key=lambda x:x[1],reverse=True)'''
 
             candidates = []
             if mention.lower() in priors_lower:
                 candidates = priors_lower[mention.lower()]
+            elif mention_lower_cleaned in priors_lower:
+                candidates = priors_lower[mention_lower_cleaned]
 
             mandatory_additions = 0
 
@@ -191,8 +183,10 @@ def process(document):
                 candidates.insert(0,(mention,1.0))
                 mandatory_additions += 1
 
-            if mention.lower() in person_candidates:
-                persons = person_candidates[mention.lower()]
+
+
+            if mention_lower_cleaned in person_candidates:
+                persons = person_candidates[mention_lower_cleaned]
                 for person in persons:
                     if person in title2id:
                         candidates.insert(0,(person,1.0))
@@ -234,8 +228,8 @@ def process(document):
 
 
                     candidate = candidates[j]
-                    abstract = get_abstract(candidate[0])
-                    #abstract = ''
+                    #abstract = get_abstract(candidate[0])
+                    abstract = ''
                     sentence_a.append(context)
                     sentence_b.append(abstract)
                     prior = candidate[1]
@@ -295,7 +289,13 @@ def process(document):
                     print('title not found')
                 print(id)
                 print(mention)
-                print()'''
+                if mention.lower() in person_candidates:
+                    print("mention in pc")
+                else:
+                    print("mention not in pc")'''
+
+
+                print()
 
 
 

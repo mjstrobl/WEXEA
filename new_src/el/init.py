@@ -5,6 +5,23 @@ config = json.load(open('../../config/config.json'))
 outputpath = config['outputpath']
 
 wexea_directory = outputpath
+
+title2filename = {}
+filename2title = json.load(open(wexea_directory + 'dictionaries/filename2title_2.json'))
+
+for filename in filename2title:
+    title2filename[filename2title[filename]] = filename
+
+with open(wexea_directory + 'dictionaries/title2filename.json') as f:
+    json.dump(title2filename,f)
+
+
+exit(0)
+
+
+
+
+
 persons = json.load(open('../../data/persons.json'))
 person_candidates = {}
 

@@ -1,381 +1,198 @@
-import random
-import sqlite3
-import json
-import re
+from candidate_tester import get_dataset
 import torch
+import copy
+import json
+import pickle
+import os.path
 from tqdm import tqdm
 import numpy as np
 from model import BertForEntityClassification
+from torch.utils.data import DataLoader, RandomSampler, SequentialSampler, TensorDataset
 from transformers import (
-    AdamW,BertTokenizer, BertForNextSentencePrediction
+    AdamW, BertTokenizer, BertForNextSentencePrediction
 )
-
-class OurDataset(torch.utils.data.Dataset):
-    def __init__(self, encodings):
-        self.encodings = encodings
-    def __getitem__(self, idx):
-        return {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
-    def __len__(self):
-        return len(self.encodings.input_ids)
-
-RE_LINKS = re.compile(r'\[{2}(.*?)\]{2}', re.DOTALL | re.UNICODE)
 
 config = json.load(open('../../config/config.json'))
 outputpath = config['outputpath']
 
 wexea_directory = outputpath
 
-id2title = json.load(open(wexea_directory + 'dictionaries/id2title.json'))
-title2id = json.load(open(wexea_directory + 'dictionaries/title2Id.json'))
-title2filename = json.load(open(wexea_directory + 'dictionaries/title2filename.json'))
-#aliases = json.load(open(wexea_directory + 'dictionaries/aliases_pruned.json'))
-#priors = json.load(open(wexea_directory + 'dictionaries/priors_sorted.json'))
-redirects = json.load(open(wexea_directory + 'dictionaries/redirects.json'))
-person_candidates = json.load(open(wexea_directory + 'dictionaries/person_candidates.json'))
-stubs = json.load(open(wexea_directory + 'dictionaries/stubs.json'))
-priors_lower = json.load(open(wexea_directory + 'dictionaries/priors_lower.json'))
 
-MAX_NUM_CANDIDATES = 50
-EPOCHS = 10
+
+class OurDataset(torch.utils.data.Dataset):
+    def __init__(self, encodings):
+        self.encodings = encodings
+
+    def __getitem__(self, idx):
+        return {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+
+    def __len__(self):
+        return len(self.encodings.input_ids)
+
+
 MAX_SENT_LENGTH = 128
+EPOCHS = 10
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
-num_added_toks = tokenizer.add_tokens(["<e>","</e>"])
+num_added_toks = tokenizer.add_tokens(["<e>", "</e>"])
 added_tokens = tokenizer.get_added_vocab()
 print('We have added', num_added_toks, 'tokens')
-model = BertForNextSentencePrediction.from_pretrained('bert-base-cased')
+model = BertForEntityClassification.from_pretrained('bert-base-cased')
 model.resize_token_embeddings(len(tokenizer))
 
-ABSTRACTS = {}
-
-def get_abstract(title):
-    if title in ABSTRACTS:
-        return ABSTRACTS[title]
-    try:
-        with open(title2filename[title]) as f:
-            for line in f:
-                line = line.strip()
-                if len(line) > 0:
-                    while True:
-                        match = re.search(RE_LINKS, line)
-                        if match:
-                            start = match.start()
-                            end = match.end()
-                            entity = match.group(1)
-                            alias = entity
-                            pos_bar = entity.find('|')
-                            if pos_bar > -1:
-                                alias = entity[pos_bar + 1:]
-                                entity = entity[:pos_bar]
-                            line = line[:start] + alias + line[end:]
-
-                        else:
-                            break
-
-                    ABSTRACTS[title] = line
-                    return line
-
-    except:
-        pass
-    return ""
-
-def create_mention_strings(mention):
-    mentions = [mention]
-    words = mention.split()
-    another_mention = ''
-    for word in words:
-        if len(word) > 1:
-            another_mention += word[0].upper() + word[1:].lower() + ' '
-        else:
-            another_mention += word[0].upper() + ' '
-
-    mentions.append(another_mention.strip())
-
-    mentions.append(mention.lower())
-
-    return mentions
-
-def process(document,type=''):
-    sentence_a = []
-    sentence_b = []
-    ps = []
-    res = []
-    ss = []
-    labels = []
-
-    test_dataset = {'contexts':[], 'candidates':[], 'ids':[]}
-
-    found = 0
-    not_found = 0
-    not_found_but_title = 0
-
-    mention_in_stubs = 0
-    mention_in_stubs_correct = 0
-    mention_single = 0
-    mention_in_aliases = 0
-
-    match_id = 0
-    not_match_id = 0
-
-    one_candidate_or_highest_prior_matching = 0
-
-    for i in range(len(document)):
-        tuple = document[i]
-        sentence_before = []
-        sentence_after = []
-        if i > 0:
-            sentence_before = document[i-1][0]
-        if i < len(document) - 1:
-            sentence_after = document[i+1][0]
-
-        sentence = tuple[0]
-        mentions = tuple[1]
-        for tuple in mentions:
-            start = tuple[0]
-            id = int(tuple[1])
-            end = tuple[2]
-
-            title = ''
-            if str(id) in id2title:
-                title = id2title[str(id)]
-
-            #if str(id) in id2title:
-            #    print("Title: " + id2title[str(id)])
-
-            mention = ' '.join(sentence[start:end])
-            current_text = (sentence[:start],mention, sentence[end:])
-
-            context = ' '.join(current_text[0]) + ' <e>' + current_text[1] + '</e> ' + ' '.join(current_text[2])
-            context = context.strip()
-
-            if len(sentence_before) + len(sentence) < MAX_SENT_LENGTH:
-                sentence_before_str = ' '.join(sentence_before)
-                sentence_after_str = ' '.join(sentence_after)
-                context = sentence_before_str + ' ' + context + ' ' + sentence_after_str
-
-            mention_parts = mention.lower().split()
-            mention_lower_cleaned = ''
-            for part in mention_parts:
-                if len(part) == 2 and part[1] == '.':
-                    mention_lower_cleaned += ''
-                else:
-                    mention_lower_cleaned += ' ' + part
-
-            mention_lower_cleaned = mention_lower_cleaned.strip()
-
-            test_dataset['contexts'].append(context)
-
-            candidates = []
-            if mention.lower() in priors_lower:
-                candidates = priors_lower[mention.lower()]
-            elif mention_lower_cleaned in priors_lower:
-                candidates = priors_lower[mention_lower_cleaned]
-
-            mandatory_additions = 0
-            correct_in_mandatory_additions = False
-
-            unique_candidates = set()
-            for candidate in candidates:
-                unique_candidates.add(candidate[0])
-
-            if mention in redirects:
-                candidates.insert(0,(redirects[mention],3.0))
-            if mention in stubs:
-                candidates.insert(0,(mention, 2.0))
-            if mention in title2id and mention not in unique_candidates:
-                candidates.insert(0,(mention,1.0))
-
-
-
-            if mention_lower_cleaned in person_candidates:
-                persons = person_candidates[mention_lower_cleaned]
-                for person in persons:
-                    if person in title2id:
-                        candidates.insert(0,(person,1.0))
-                        if person == title:
-                            correct_in_mandatory_additions = True
-                        mandatory_additions += 1
-
-            unique_candidates = set()
-            if len(candidates) > 0:
-                new_candidates = []
-                for candidate in candidates:
-                    if candidate[0] in title2id and candidate[0] not in unique_candidates:
-                        new_candidates.append(candidate)
-                        unique_candidates.add(candidate[0])
-
-                candidates = new_candidates
-
-            if len(candidates) > 0:
-                test_dataset['ids'].append(id)
-
-                current_max_candidates = MAX_NUM_CANDIDATES
-                if type == 'train':
-                    current_max_candidates = min(10,current_max_candidates)
-                    if not correct_in_mandatory_additions:
-                        candidates = candidates[mandatory_additions:]
-                        mandatory_additions = 0
-
-                if len(candidates) > current_max_candidates + mandatory_additions:
-                    candidates = candidates[:current_max_candidates + mandatory_additions]
-
-                candidate_l = []
-
-
-                if len(candidates) == 1:
-                    candidate_name = candidates[0][0]
-                    if candidate_name in title2id and title2id[candidate_name] == id:
-                        match_id += 1
-                    else:
-                        if str(id) in id2title:
-                            title = id2title[str(id)]
-                            #print(candidate_name + " vs " + title + " (" + mention + ")")
-
-                        not_match_id += 1
-
-                got_true_candidate = False
-                for j in range(len(candidates)):
-
-
-
-                    candidate = candidates[j]
-                    abstract = get_abstract(candidate[0])
-                    #abstract = ''
-                    sentence_a.append(context)
-                    sentence_b.append(abstract)
-                    prior = candidate[1]
-                    redirect = 0
-                    stub = 0
-                    if prior == 2.0:
-                        # stub
-                        stub = 1
-                        prior = 0.0
-                    elif prior == 3.0:
-                        # redirect
-                        redirect = 1
-                        prior = 0.0
-
-                    ps.append(prior)
-                    ss.append(stub)
-                    res.append(redirect)
-
-                    if title2id[candidate[0]] == id:
-                        labels.append(1)
-
-                        got_true_candidate = True
-                        if j == 0:
-                            one_candidate_or_highest_prior_matching += 1
-                    else:
-                        labels.append(0)
-                    candidate_l.append((abstract, candidate[0], candidate[1]))
-
-                if got_true_candidate:
-                    found += 1
-                else:
-                    '''print(context)
-                    print(candidates)
-                    print(mention)
-                    if str(id) in id2title:
-                        title = id2title[str(id)]
-                        print(title)
-                    else:
-                        print('title not found')
-                    print()'''
-
-
-
-
-                    not_found += 1
-                test_dataset['candidates'].append(candidate_l)
-                if len(candidate_l) == 1:
-                    mention_single += 1
-            else:
-                not_found += 1
-
-                '''print(context)
-                if str(id) in id2title:
-                    title = id2title[str(id)]
-                    print(title)
-                else:
-                    print('title not found')
-                print(id)
-                print(mention)
-                if mention.lower() in person_candidates:
-                    print("mention in pc")
-                else:
-                    print("mention not in pc")
-                print()'''
-
-
-
-                test_dataset['ids'].append(id)
-                test_dataset['candidates'].append([])
-
-    inputs = tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=MAX_SENT_LENGTH, truncation=True,padding='max_length')
-    inputs['labels'] = torch.LongTensor([labels]).T
-    inputs['priors'] = torch.FloatTensor([ps]).T
-    inputs['redirects'] = torch.FloatTensor([res]).T
-    inputs['stubs'] = torch.FloatTensor([ss]).T
-
-    dataset = OurDataset(inputs)
-
-    print("Found: " + str(found))
-    print("not found: " + str(not_found))
-    print("not found but title: " + str(not_found_but_title))
-    print("mention in aliases: " + str(mention_in_aliases))
-    print("mention in stubs: " + str(mention_in_stubs))
-    print("mention in stubs correct: " + str(mention_in_stubs_correct))
-    print("mention single: " + str(mention_single))
-    print("match title: " + str(match_id))
-    print("not match title: " + str(not_match_id))
-    print("one_candidate_or_highest_prior_matching: " + str(one_candidate_or_highest_prior_matching))
-    print("Total: " + str(len(labels)))
-    print("test_dataset lengths: " + str(len(test_dataset['contexts'])) + ", " + str(len(test_dataset['ids'])) + ", " + str(len(test_dataset['candidates'])))
-
-    zeros = 0
-    ones = 0
-    for i in range(len(labels)):
-        if labels[i] == 0:
-            zeros += 1
-        else:
-            ones += 1
-
-    print("zeros: " + str(zeros))
-    print("ones: " + str(ones))
-
-    return dataset,test_dataset
-
-
-def get_dataset(type=None):
-    print("get: " + type)
-    filename = '../../data/aida_' + type + ".txt"
-    with open(filename) as f:
-        current_sentence = []
-        document = []
-        mentions = []
-        for line in f:
-            line = line.strip()
-            if len(line) == 0 or line.startswith("DOCSTART") or line.startswith("DOCEND") or line == "*NL*":
-                if len(mentions) > 0:
-                    # process(current_sentence,mentions)
-                    document.append((current_sentence, mentions))
-
-                current_sentence = []
-                mentions = []
-            else:
-                if line.startswith("MMSTART"):
-                    mentions.append([len(current_sentence)])
-                    mentions[-1].append(line[8:])
-                elif line.startswith("MMEND"):
-                    mentions[-1].append(len(current_sentence))
-                else:
-                    current_sentence.append(line)
-
-        if len(mentions) > 0:
-            # process(current_sentence, mentions)
-            document.append((current_sentence, mentions))
-
-        return process(document,type=type)
+
+'''class InputFeatures(object):
+    def __init__(self, input_ids_context, attention_mask_context, token_type_ids_context,
+                 input_ids_abstract, attention_mask_abstract, token_type_ids_abstract,
+                 redirect, surname, prior,
+                 label):
+        self.input_ids_context = input_ids_context
+        self.attention_mask_context = attention_mask_context
+        self.token_type_ids_context = token_type_ids_context
+        self.input_ids_abstract = input_ids_abstract
+        self.attention_mask_abstract = attention_mask_abstract
+        self.token_type_ids_abstract = token_type_ids_abstract
+        self.redirect = [redirect]
+        self.surname = [surname]
+        self.prior = [prior]
+        self.label = [label]
+
+    def __repr__(self):
+        return str(self.to_json_string())
+
+    def to_dict(self):
+        output = copy.deepcopy(self.__dict__)
+        return output
+
+    def to_json_string(self):
+        return json.dumps(self.to_dict(), indent=2, sort_keys=True) + "\n"
+
+
+def create_input_feature(tokens, tokenizer, max_length,
+                         cls_token="[CLS]",
+                         cls_token_segment_id=0,
+                         sep_token_segment_id=1,
+                         sep_token="[SEP]",
+                         pad_token=0,
+                         pad_token_segment_id=0,
+                         sequence_a_segment_id=0
+                         ):
+
+    if len(tokens) > max_length - 2:
+        tokens = tokens[:max_length-2]
+
+    token_type_ids = [sequence_a_segment_id] * len(tokens)
+
+    tokens = [cls_token] + tokens + [sep_token]
+    token_type_ids = [cls_token_segment_id] + token_type_ids + [sep_token_segment_id]
+
+    input_ids = tokenizer.convert_tokens_to_ids(tokens)
+
+    # The mask has 1 for real tokens and 0 for padding tokens. Only real
+    # tokens are attended to.
+    attention_mask = [1] * len(input_ids)
+
+    # Zero-pad up to the sequence length.
+    padding_length = max_length - len(input_ids)
+
+    input_ids = input_ids + ([pad_token] * padding_length)
+    attention_mask = attention_mask + ([0] * padding_length)
+    token_type_ids = token_type_ids + ([pad_token_segment_id] * padding_length)
+
+    assert len(input_ids) == max_length, "Error with input length {} vs {}".format(len(input_ids), max_length)
+    assert len(attention_mask) == max_length, "Error with input length {} vs {}".format(
+        len(attention_mask), max_length
+    )
+    assert len(token_type_ids) == max_length, "Error with input length {} vs {}".format(
+        len(token_type_ids), max_length
+    )
+
+    return input_ids, attention_mask, token_type_ids
+
+def create_dataset(features):
+    input_ids_context = torch.tensor([f.input_ids_context for f in features], dtype=torch.long)
+    attention_mask_context = torch.tensor([f.attention_mask_context for f in features], dtype=torch.long)
+    token_type_ids_context = torch.tensor([f.token_type_ids_context for f in features], dtype=torch.long)
+
+    input_ids_abstract = torch.tensor([f.input_ids_abstract for f in features], dtype=torch.long)
+    attention_mask_abstract = torch.tensor([f.attention_mask_abstract for f in features], dtype=torch.long)
+    token_type_ids_abstract = torch.tensor([f.token_type_ids_abstract for f in features], dtype=torch.long)
+
+    prior = torch.tensor([f.prior for f in features], dtype=torch.float)
+    redirect = torch.tensor([f.redirect for f in features], dtype=torch.long)
+    surname = torch.tensor([f.surname for f in features], dtype=torch.long)
+
+    labels = torch.tensor([f.label for f in features], dtype=torch.long)
+
+    dataset = TensorDataset(input_ids_context, attention_mask_context, token_type_ids_context,
+                            input_ids_abstract, attention_mask_abstract, token_type_ids_abstract, redirect, surname, prior, labels)
+
+    return dataset
+
+def process(type=''):
+    fname = "data/" + type + ".pickle"
+    if os.path.isfile(fname):
+        with open(fname, 'rb') as handle:
+            features = pickle.load(handle)
+
+        print("using pickled file.")
+    else:
+
+        id2title = json.load(open(wexea_directory + 'dictionaries/id2title.json'))
+        title2id = json.load(open(wexea_directory + 'dictionaries/title2Id.json'))
+        title2filename = json.load(open(wexea_directory + 'dictionaries/title2filename.json'))
+        redirects = json.load(open(wexea_directory + 'dictionaries/redirects.json'))
+        person_candidates = json.load(open(wexea_directory + 'dictionaries/person_candidates.json'))
+        priors_lower = json.load(open(wexea_directory + 'dictionaries/priors_lower_5.json'))
+
+
+        contexts, abstracts, additionals, labels = get_dataset(id2title, title2id, title2filename, redirects, person_candidates, priors_lower,type)
+
+        features = []
+        for i in range(len(contexts)):
+            context = contexts[i]
+            abstract = abstracts[i]
+            additional = additionals[i]
+            label = labels[i]
+
+            prior = additional[0]
+            redirect = additional[1]
+            surname = additional[2]
+
+            abstract_tokens = tokenizer.tokenize(abstract)
+            context_tokens = []
+
+            if len(context) > 3:
+                context_tokens.extend(tokenizer.tokenize(context[3]))
+
+            context_tokens.extend(tokenizer.tokenize(context[0]))
+            context_tokens.extend(tokenizer.tokenize("<e>"))
+            context_tokens.extend(tokenizer.tokenize(context[1]))
+            context_tokens.extend(tokenizer.tokenize("</e>"))
+            context_tokens.extend(tokenizer.tokenize(context[2]))
+
+            if len(context) > 3:
+                context_tokens.extend(tokenizer.tokenize(context[4]))
+
+            input_ids_context, attention_mask_context, token_type_ids_context = create_input_feature(context_tokens,
+                                                                                                     tokenizer,
+                                                                                                     MAX_SENT_LENGTH)
+            input_ids_abstract, attention_mask_abstract, token_type_ids_abstract = create_input_feature(abstract_tokens,
+                                                                                                        tokenizer,
+                                                                                                        MAX_SENT_LENGTH)
+
+            features.append(InputFeatures(input_ids_context, attention_mask_context, token_type_ids_context, input_ids_abstract,
+                          attention_mask_abstract, token_type_ids_abstract, redirect, surname, prior, label))
+
+        with open(fname, 'wb') as handle:
+            pickle.dump(features, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        print("recreating file.")
+
+    dataset = create_dataset(features)
+
+    return dataset'''
+
 
 def metrics(preds, out_label_ids):
     tp = 0
@@ -393,7 +210,6 @@ def metrics(preds, out_label_ids):
         elif prediction == 0 and label == 1:
             fn += 1
 
-
     precision = 0.0
     recall = 0.0
     f1 = 0.0
@@ -406,13 +222,14 @@ def metrics(preds, out_label_ids):
 
     return precision, recall, f1, tp, fp, fn
 
-def run_test(test_dataset):
+
+def run_test(test_dataset, title2id):
     correct = 0
     incorrect = 0
 
-    one_candidate = {'correct':0,'incorrect':0}
+    one_candidate = {'correct': 0, 'incorrect': 0}
     zero_candidate = 0
-    more_candidates = {'correct':0,'incorrect':0}
+    more_candidates = {'correct': 0, 'incorrect': 0}
 
     data_length = len(test_dataset['contexts'])
     for i in range(data_length):
@@ -425,7 +242,7 @@ def run_test(test_dataset):
             zero_candidate += 1
         elif len(candidates) == 1:
             candidate = candidates[0][1]
-            if title2id[candidate] == id:
+            if title2id[candidate] == int(id):
                 correct += 1
                 one_candidate['correct'] += 1
             else:
@@ -438,44 +255,33 @@ def run_test(test_dataset):
                 abstract = candidates[j][0]
                 candidate = candidates[j][1]
                 prior = candidates[j][2]
-                redirect = 0
-                stub = 0
-                if prior == 2.0:
-                    #stub
-                    stub = 1
-                    prior = 0.0
-                elif prior == 3.0:
-                    #redirect
-                    redirect = 1
-                    prior = 0.0
-
-
+                redirect = candidates[j][3]
+                surname = candidates[j][4]
 
                 sentence_a = [context]
                 sentence_b = [abstract]
                 ps = [prior]
-                ss = [stub]
+                ss = [surname]
                 res = [redirect]
 
                 inputs = tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=128, truncation=True,
                                    padding='max_length')
                 inputs['priors'] = torch.FloatTensor([ps]).T
                 inputs['redirects'] = torch.FloatTensor([res]).T
-                inputs['stubs'] = torch.FloatTensor([ss]).T
-
-
+                inputs['surnames'] = torch.FloatTensor([ss]).T
 
                 input_ids = inputs['input_ids'].to(device)
                 token_type_ids = inputs['token_type_ids'].to(device)
                 attention_mask = inputs['attention_mask'].to(device)
-                is_redirect = batch['redirects'].to(device)
-                is_stub = batch['stubs'].to(device)
+                adds_redirect = inputs['redirects'].to(device)
+                adds_prior = inputs['priors'].to(device)
+                adds_surname = inputs['surnames'].to(device)
 
-                ps = inputs['priors'].to(device)
+                outputs = model(input_ids, attention_mask=attention_mask, adds_redirect=adds_redirect,
+                                adds_surname=adds_surname,
+                                token_type_ids=token_type_ids, adds_prior=adds_prior)
 
-                outputs = model(input_ids, attention_mask=attention_mask,is_redirect=is_redirect,is_stub=is_stub, token_type_ids=token_type_ids, priors=ps)
-
-                logits = outputs[0]
+                logits = outputs.logits
 
                 preds = logits.detach().cpu().numpy()
                 f_x = np.exp(preds[0]) / np.sum(np.exp(preds[0]))
@@ -484,7 +290,7 @@ def run_test(test_dataset):
                     best_candidate_pred = prediction
                     best_candidate = candidate
 
-            if id == title2id[best_candidate]:
+            if int(id) == title2id[best_candidate]:
                 correct += 1
                 more_candidates['correct'] += 1
             else:
@@ -501,6 +307,7 @@ def run_test(test_dataset):
     acc = correct / (correct + incorrect)
     print("acc: " + str(acc))
 
+
 def evaluate(loader):
     eval_loss = 0.0
     nb_eval_steps = 0
@@ -508,21 +315,25 @@ def evaluate(loader):
     out_label_ids = None
     for batch in tqdm(loader, desc="Evaluating"):
         model.eval()
+
         input_ids = batch['input_ids'].to(device)
         token_type_ids = batch['token_type_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
-        is_redirect = batch['redirects'].to(device)
-        is_stub = batch['stubs'].to(device)
-
-        ps = batch['priors'].to(device)
-
+        adds_redirect = batch['redirects'].to(device)
+        adds_prior = batch['priors'].to(device)
+        adds_surname = batch['surnames'].to(device)
         labels = batch['labels'].to(device)
 
-        with torch.no_grad():
-            outputs = model(input_ids, attention_mask=attention_mask,is_redirect=is_redirect,is_stub=is_stub,
-                            token_type_ids=token_type_ids, priors=ps, labels=labels)
 
-            tmp_eval_loss, logits = outputs[:2]
+
+        with torch.no_grad():
+            outputs = model(input_ids, attention_mask=attention_mask, adds_redirect=adds_redirect,
+                            adds_surname=adds_surname,
+                            token_type_ids=token_type_ids, adds_prior=adds_prior,
+                            labels=labels)
+
+            tmp_eval_loss = outputs.loss
+            logits = outputs.logits
 
             eval_loss += tmp_eval_loss.mean().item()
         nb_eval_steps += 1
@@ -538,16 +349,27 @@ def evaluate(loader):
     print("precision: %f, recall: %f, f1: %f" % (precision, recall, f1))
     print("tp: %d, fp: %d, fn: %d" % (tp, fp, fn))
 
-dataset_dev, test_dataset_dev = get_dataset(type='dev')
-dataset_test, test_dataset_test = get_dataset(type='test')
-dataset_train, test_dataset_train = get_dataset(type='train')
+
+
+#dataset_dev = process(type='dev')
+#dataset_test = process(type='test')
+#dataset_train = process(type='train')
+
+
+
+
+dataset_dev,test_data_dev = get_dataset(wexea_directory,tokenizer, type='dev')
+dataset_test, test_data_test = get_dataset(wexea_directory,tokenizer, type='test')
+dataset_train,test_data_train = get_dataset(wexea_directory,tokenizer, type='train')
+
+title2id = json.load(open(wexea_directory + 'dictionaries/title2Id.json'))
 
 
 loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=16, shuffle=True)
 loader_dev = torch.utils.data.DataLoader(dataset_dev, batch_size=16, shuffle=False)
 
 weight_decay = 0.0
-learning_rate = 5e-5
+learning_rate = 1e-5
 adam_epsilon = 1e-8
 
 no_decay = ["bias", "LayerNorm.weight"]
@@ -564,7 +386,6 @@ optim = AdamW(optimizer_grouped_parameters, lr=learning_rate, eps=adam_epsilon)
 
 model.to(device)
 
-
 for epoch in range(EPOCHS):
     # setup loop with TQDM and dataloader
     loop = tqdm(loader_train, leave=True)
@@ -572,27 +393,38 @@ for epoch in range(EPOCHS):
     batches = 0.0
     for batch in loop:
         batches += 1.0
+
         # initialize calculated gradients (from prev step)
         optim.zero_grad()
         # pull all tensor batches required for training
+
+
+        '''input_ids_context = batch[0].to(device)
+        token_type_ids_context = batch[1].to(device)
+        attention_mask_context = batch[2].to(device)
+        input_ids_abstract = batch[3].to(device)
+        token_type_ids_abstract = batch[4].to(device)
+        attention_mask_abstract = batch[5].to(device)
+        redirect = batch[6].to(device)
+        surname = batch[7].to(device)
+        prior = batch[8].to(device)
+        label = batch[9].to(device)'''
+
         input_ids = batch['input_ids'].to(device)
         token_type_ids = batch['token_type_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
-        is_redirect = batch['redirects'].to(device)
-        is_stub = batch['stubs'].to(device)
-
-        ps = batch['priors'].to(device)
-
+        adds_redirect = batch['redirects'].to(device)
+        adds_prior = batch['priors'].to(device)
+        adds_surname = batch['surnames'].to(device)
         labels = batch['labels'].to(device)
 
-        outputs = model(input_ids, attention_mask=attention_mask,is_redirect=is_redirect,is_stub=is_stub,
-                        token_type_ids=token_type_ids,priors=ps,
+        outputs = model(input_ids, attention_mask=attention_mask, adds_redirect=adds_redirect, adds_surname=adds_surname,
+                        token_type_ids=token_type_ids, adds_prior=adds_prior,
                         labels=labels)
         # extract loss
         loss = outputs.loss
 
         loss_acc += loss.item()
-
 
         # calculate loss for every parameter that needs grad update
         loss.backward()
@@ -600,20 +432,18 @@ for epoch in range(EPOCHS):
         optim.step()
         # print relevant info to progress bar
         loop.set_description(f'Epoch {epoch}')
-        loop.set_postfix(loss=loss_acc/batches)
+        loop.set_postfix(loss=loss_acc / batches)
 
-    print("evaluate")
     evaluate(loader_dev)
     print("test dev")
-    run_test(test_dataset_dev)
-
+    run_test(test_data_dev, title2id)
 
 # test_dataset = {'contexts':[], 'candidates':[], 'titles':[]}
 print("test dev")
-run_test(test_dataset_dev)
+run_test(test_data_dev, title2id)
 
 print("test test")
-run_test(test_dataset_test)
+run_test(test_data_test, title2id)
 
 
 

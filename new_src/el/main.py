@@ -247,7 +247,7 @@ def run_test(test_dataset, title2id):
             incorrect += 1
             zero_candidate += 1
         elif len(candidates) == 1:
-            candidate = candidates[0][1]
+            candidate = candidates[0][0]
             if title2id[candidate] == int(id):
                 correct += 1
                 correct_found += 1
@@ -259,11 +259,12 @@ def run_test(test_dataset, title2id):
             best_candidate_pred = 0.0
             best_candidate = None
             for j in range(len(candidates)):
-                abstract = candidates[j][0]
-                candidate = candidates[j][1]
-                prior = candidates[j][2]
-                redirect = candidates[j][3]
-                surname = candidates[j][4]
+                #candidate_l.append((candidate[0], prior, redirect, surname, abstract))
+                abstract = candidates[j][4]
+                candidate = candidates[j][0]
+                prior = candidates[j][1]
+                redirect = candidates[j][2]
+                surname = candidates[j][3]
 
                 sentence_a = [context]
                 sentence_b = [abstract]

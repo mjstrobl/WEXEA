@@ -16,7 +16,12 @@ from transformers import (
 
 RE_LINKS = re.compile(r'\[{2}(.*?)\]{2}', re.DOTALL | re.UNICODE)
 
-MAX_SENT_LENGTH = 128
+MAX_SENT_LENGTH = 256
+MAX_ABSTRACT_LENGTH = 64
+
+
+
+
 MAX_NUM_CANDIDATES = 50
 
 ABSTRACTS = {}
@@ -30,11 +35,11 @@ class OurDataset(torch.utils.data.Dataset):
         return len(self.encodings.input_ids)
 
 
-def get_abstract(title,title2filename):
+def get_abstract(title,title2filename, entity_title2filename):
     if title in ABSTRACTS:
         return ABSTRACTS[title]
     try:
-        with open(title2filename[title]) as f:
+        with open(title2filename[title].replace("articles_2","articles_3")) as f:
             for line in f:
                 line = line.strip()
                 if len(line) > 0:
@@ -44,15 +49,21 @@ def get_abstract(title,title2filename):
                             start = match.start()
                             end = match.end()
                             entity = match.group(1)
-                            alias = entity
-                            pos_bar = entity.find('|')
-                            if pos_bar > -1:
-                                alias = entity[pos_bar + 1:]
-                                entity = entity[:pos_bar]
-                            line = line[:start] + alias + line[end:]
+                            parts = entity.split('|')
+                            entity = parts[-2]
+
+                            line = line[:start] + entity + line[end:]
 
                         else:
                             break
+
+                    if title in entity_title2filename:
+                        with open(entity_title2filename[title]) as fe:
+                            entities = fe.read()
+
+                        abstract_parts = line.split(' ')
+                        line = ' '.join(abstract_parts[:min(MAX_ABSTRACT_LENGTH,len(abstract_parts))])
+                        line += ' ' + entities
 
                     ABSTRACTS[title] = line
                     return line
@@ -114,7 +125,7 @@ def create_candidate_set(candidates, title2id, type=''):
     return result_l
 
 
-def process(documents,id2title, title2id, title2filename, redirects, person_candidates, priors_lower, tokenizer=None, type=''):
+def process(documents,id2title, title2id, title2filename, entity_title2filename, redirects, person_candidates, priors_lower, tokenizer=None, type=''):
     labels = []
     contexts = []
     abstracts = []
@@ -155,23 +166,17 @@ def process(documents,id2title, title2id, title2filename, redirects, person_cand
                 if id in id2title:
                     mention = unidecode(' '.join(sentence[start:end]).lower())
 
-                    current_text = [' '.join(sentence[:start]), ' '.join(sentence[start:end]), ' '.join(sentence[end:])]
-
-                    context = ' '.join(current_text[0]) + ' <e>' + current_text[1] + '</e> ' + ' '.join(current_text[2])
+                    context = ' '.join(sentence[:start]) + ' <e>' + ' '.join(sentence[start:end]) + '</e> ' + ' '.join(sentence[end:])
                     context = context.strip()
 
-                    if len(sentence_before) + len(sentence) < MAX_SENT_LENGTH:
+                    if len(sentence_before) + len(sentence) < MAX_SENT_LENGTH/2:
                         sentence_before_str = ' '.join(sentence_before)
-                        sentence_after_str = ' '.join(sentence_after)
-                        context = sentence_before_str + ' ' + context + ' ' + sentence_after_str
+                        #sentence_after_str = ' '.join(sentence_after)
+                        context = sentence_before_str + ' ' + context
 
-
-                    if len(sentence_before) + len(sentence) < 80:
-                        sentence_before_str = ' '.join(sentence_before)
-                        sentence_after_str = ' '.join(sentence_after)
-
-                        current_text.append(sentence_before_str)
-                        current_text.append(sentence_after_str)
+                        if len(sentence_before) + len(sentence) + len(sentence_after) < MAX_SENT_LENGTH/2:
+                            sentence_after_str = ' '.join(sentence_after)
+                            context += ' ' + sentence_after_str
 
 
                     mention_parts = mention_upper.split()
@@ -257,7 +262,8 @@ def process(documents,id2title, title2id, title2filename, redirects, person_cand
 
                         for j in range(len(candidates)):
                             candidate = candidates[j]
-                            abstract = get_abstract(candidate[0],title2filename)
+                            abstract = get_abstract(candidate[0],title2filename, entity_title2filename)
+
                             # abstract = ''
                             contexts.append(context)
                             abstracts.append(abstract)
@@ -277,7 +283,7 @@ def process(documents,id2title, title2id, title2filename, redirects, person_cand
                             else:
                                 labels.append(0)
                             counter[labels[-1]] += 1
-                            candidate_l.append((abstract, candidate[0], prior, redirect, surname))
+                            candidate_l.append((candidate[0], prior, redirect, surname, abstract))
 
                         test_data['candidates'].append(candidate_l)
 
@@ -326,6 +332,7 @@ def get_dataset(wexea_directory, tokenizer=None,type=''):
         id2title = json.load(open(wexea_directory + 'dictionaries/id2title.json'))
         title2id = json.load(open(wexea_directory + 'dictionaries/title2Id.json'))
         title2filename = json.load(open(wexea_directory + 'dictionaries/title2filename.json'))
+        entity_title2filename = json.load(open(wexea_directory + 'dictionaries/entity_title2filename.json'))
         redirects = json.load(open(wexea_directory + 'dictionaries/redirects.json'))
         person_candidates = json.load(open(wexea_directory + 'dictionaries/person_candidates.json'))
         priors_lower = json.load(open(wexea_directory + 'dictionaries/priors_lower.json'))
@@ -364,7 +371,7 @@ def get_dataset(wexea_directory, tokenizer=None,type=''):
 
             #documents = documents[:10]
 
-            dataset, test_data = process(documents, id2title, title2id, title2filename, redirects, person_candidates, priors_lower, tokenizer=tokenizer, type=type)
+            dataset, test_data = process(documents, id2title, title2id, title2filename, entity_title2filename, redirects, person_candidates, priors_lower, tokenizer=tokenizer, type=type)
             with open(fname, 'wb') as handle:
                 pickle.dump(dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
                 pickle.dump(test_data, handle, protocol=pickle.HIGHEST_PROTOCOL)

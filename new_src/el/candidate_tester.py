@@ -305,7 +305,7 @@ def get_dataset(wexea_directory, tokenizer,type=''):
         title2filename = json.load(open(wexea_directory + 'dictionaries/title2filename.json'))
         redirects = json.load(open(wexea_directory + 'dictionaries/redirects.json'))
         person_candidates = json.load(open(wexea_directory + 'dictionaries/person_candidates.json'))
-        priors_lower = json.load(open(wexea_directory + 'dictionaries/priors_lower_5.json'))
+        priors_lower = json.load(open(wexea_directory + 'dictionaries/priors_lower.json'))
 
         print("get: " + type)
         filename = '../../data/aida_' + type + ".txt"

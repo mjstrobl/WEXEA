@@ -63,7 +63,7 @@ def start():
         print("directories exist already")
 
     for title in title2filename:
-        entities = []
+        entities = set()
         with open(title2filename[title]) as f:
             text = f.read()
             matches = re.findall(RE_LINKS, text)
@@ -75,7 +75,7 @@ def start():
                     if pos_bar > -1:
                         entity = alias[:pos_bar]
                         alias = alias[pos_bar+1:]
-                    entities.append(entity)
+                    entities.add(entity)
 
         if len(entities) > 0:
             filename = create_file_name_and_directory(title, directorypath)
@@ -90,7 +90,5 @@ def start():
 
     with open(outputpath + 'dictionaries/entity_title2filename.json','w') as f:
         json.dump(entity_title2filename,f)
-
-
 
 start()

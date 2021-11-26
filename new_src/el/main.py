@@ -227,6 +227,8 @@ def run_test(test_dataset, title2id):
     correct = 0
     incorrect = 0
 
+    correct_found = 0
+
     one_candidate = {'correct': 0, 'incorrect': 0}
     zero_candidate = 0
     more_candidates = {'correct': 0, 'incorrect': 0}
@@ -290,6 +292,9 @@ def run_test(test_dataset, title2id):
                     best_candidate_pred = prediction
                     best_candidate = candidate
 
+                if int(id) == title2id[candidate]:
+                    correct_found += 1
+
             if int(id) == title2id[best_candidate]:
                 correct += 1
                 more_candidates['correct'] += 1
@@ -297,6 +302,7 @@ def run_test(test_dataset, title2id):
                 incorrect += 1
                 more_candidates['incorrect'] += 1
 
+    print("correct found: " + str(correct_found))
     print("correct: " + str(correct))
     print("incorrect: " + str(incorrect))
     print("more candidates: ")

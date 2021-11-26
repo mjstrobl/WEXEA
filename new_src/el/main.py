@@ -370,9 +370,9 @@ def evaluate(loader):
 
 
 
-dataset_dev,test_data_dev = get_dataset(wexea_directory,tokenizer, type='dev')
-dataset_test, test_data_test = get_dataset(wexea_directory,tokenizer, type='test')
-dataset_train,test_data_train = get_dataset(wexea_directory,tokenizer, type='train')
+dataset_dev,test_data_dev = get_dataset(wexea_directory,tokenizer=tokenizer, type='dev')
+dataset_test, test_data_test = get_dataset(wexea_directory,tokenizer=tokenizer, type='test')
+dataset_train,test_data_train = get_dataset(wexea_directory,tokenizer=tokenizer, type='train')
 
 title2id = json.load(open(wexea_directory + 'dictionaries/title2Id.json'))
 

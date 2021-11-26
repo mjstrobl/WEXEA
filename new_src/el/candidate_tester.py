@@ -114,7 +114,7 @@ def create_candidate_set(candidates, title2id, type=''):
     return result_l
 
 
-def process(tokenizer, documents,id2title, title2id, title2filename, redirects, person_candidates, priors_lower, type=''):
+def process(documents,id2title, title2id, title2filename, redirects, person_candidates, priors_lower, tokenizer=None, type=''):
     labels = []
     contexts = []
     abstracts = []
@@ -124,6 +124,12 @@ def process(tokenizer, documents,id2title, title2id, title2filename, redirects, 
     adds_surname = []
 
     test_data = {"ids":[], "contexts":[], "candidates":[]}
+
+    correct_found = 0
+    all = 0
+    not_found = 0
+
+
 
     counter = {1:0,0:0}
 
@@ -140,6 +146,7 @@ def process(tokenizer, documents,id2title, title2id, title2filename, redirects, 
             sentence = tuple[0]
             mentions = tuple[1]
             for tuple in mentions:
+                all += 1
                 start = tuple[0]
                 id = tuple[1]
                 end = tuple[2]
@@ -266,6 +273,7 @@ def process(tokenizer, documents,id2title, title2id, title2filename, redirects, 
 
                             if candidate[0] == title:
                                 labels.append(1)
+                                correct_found += 1
                             else:
                                 labels.append(0)
                             counter[labels[-1]] += 1
@@ -273,24 +281,39 @@ def process(tokenizer, documents,id2title, title2id, title2filename, redirects, 
 
                         test_data['candidates'].append(candidate_l)
 
+                    else:
+                        not_found += 1
+                        test_data['ids'].append(id)
+                        test_data['contexts'].append(context)
+                        test_data['candidates'].append([])
+
+                else:
+                    not_found += 1
+                    test_data['ids'].append(id)
+                    test_data['contexts'].append(context)
+                    test_data['candidates'].append([])
+
     print(counter)
+    dataset = None
+    if tokenizer:
+        inputs = tokenizer(contexts, abstracts, return_tensors='pt', max_length=MAX_SENT_LENGTH, truncation=True,
+                           padding='max_length')
+        inputs['labels'] = torch.LongTensor([labels]).T
+        inputs['priors'] = torch.FloatTensor([adds_priors]).T
+        inputs['redirects'] = torch.FloatTensor([adds_redirects]).T
+        inputs['surnames'] = torch.FloatTensor([adds_surname]).T
+        dataset = OurDataset(inputs)
 
-    inputs = tokenizer(contexts, abstracts, return_tensors='pt', max_length=MAX_SENT_LENGTH, truncation=True,
-                       padding='max_length')
-    inputs['labels'] = torch.LongTensor([labels]).T
-    inputs['priors'] = torch.FloatTensor([adds_priors]).T
-    inputs['redirects'] = torch.FloatTensor([adds_redirects]).T
-    inputs['surnames'] = torch.FloatTensor([adds_surname]).T
-    dataset = OurDataset(inputs)
-
-
+    print("all: " + str(all))
+    print("correct found: " + str(correct_found))
+    print("not found: " + str(not_found))
 
     return dataset, test_data
 
 
-def get_dataset(wexea_directory, tokenizer,type=''):
+def get_dataset(wexea_directory, tokenizer=None,type=''):
     fname = "data/" + type + ".pickle"
-    if os.path.isfile(fname):
+    if os.path.isfile(fname) and tokenizer:
         with open(fname, 'rb') as handle:
             dataset = pickle.load(handle)
             test_data = pickle.load(handle)
@@ -341,7 +364,7 @@ def get_dataset(wexea_directory, tokenizer,type=''):
 
             #documents = documents[:10]
 
-            dataset, test_data = process(tokenizer, documents, id2title, title2id, title2filename, redirects, person_candidates, priors_lower, type=type)
+            dataset, test_data = process(documents, id2title, title2id, title2filename, redirects, person_candidates, priors_lower, tokenizer=tokenizer, type=type)
             with open(fname, 'wb') as handle:
                 pickle.dump(dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
                 pickle.dump(test_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -349,9 +372,17 @@ def get_dataset(wexea_directory, tokenizer,type=''):
             print("recreating file.")
             return dataset, test_data
 
-#get_dataset(type='dev')
-# get_dataset(type='test')
-# get_dataset(type='train')
+
+
+
+config = json.load(open('../../config/config.json'))
+outputpath = config['outputpath']
+
+wexea_directory = outputpath
+
+dataset_dev,test_data_dev = get_dataset(wexea_directory, type='dev')
+dataset_test, test_data_test = get_dataset(wexea_directory, type='test')
+dataset_train,test_data_train = get_dataset(wexea_directory, type='train')
 
 
 

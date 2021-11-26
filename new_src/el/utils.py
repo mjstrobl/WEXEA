@@ -88,6 +88,7 @@ def start():
         if counter % 1000 == 0:
             print('Articles processed: ' + str(counter),end='\r')
 
+    print('Articles processed: ' + str(counter))
     with open(outputpath + 'dictionaries/entity_title2filename.json','w') as f:
         json.dump(entity_title2filename,f)
 

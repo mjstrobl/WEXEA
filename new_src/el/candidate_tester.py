@@ -295,7 +295,7 @@ def process(documents,id2title, title2id, title2filename, redirects, person_cand
 
     print(counter)
     dataset = None
-    if tokenizer:
+    if tokenizer != None:
         inputs = tokenizer(contexts, abstracts, return_tensors='pt', max_length=MAX_SENT_LENGTH, truncation=True,
                            padding='max_length')
         inputs['labels'] = torch.LongTensor([labels]).T
@@ -313,7 +313,7 @@ def process(documents,id2title, title2id, title2filename, redirects, person_cand
 
 def get_dataset(wexea_directory, tokenizer=None,type=''):
     fname = "data/" + type + ".pickle"
-    if os.path.isfile(fname) and tokenizer:
+    if os.path.isfile(fname) and tokenizer != None:
         with open(fname, 'rb') as handle:
             dataset = pickle.load(handle)
             test_data = pickle.load(handle)

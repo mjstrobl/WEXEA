@@ -17,7 +17,7 @@ from transformers import (
 RE_LINKS = re.compile(r'\[{2}(.*?)\]{2}', re.DOTALL | re.UNICODE)
 
 MAX_SENT_LENGTH = 128
-MAX_NUM_CANDIDATES = 10
+MAX_NUM_CANDIDATES = 50
 
 ABSTRACTS = {}
 

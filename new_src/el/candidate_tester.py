@@ -84,21 +84,34 @@ def create_candidate_set(candidates, title2id, type=''):
     if type == 'train':
         current_max_cands = 10
 
-    seen = set()
-    result = []
+    result = {}
     for key in candidates:
-        only_if_not_seen = False
-        if 'lower' in key:
-            only_if_not_seen = True
-
         for i in range(min(current_max_cands, len(candidates[key]['list']))):
             candidate = candidates[key]['list'][i]
-            if candidate[0] in title2id and (candidate[0] not in seen or not only_if_not_seen):
-                result.append(candidate)
-            if only_if_not_seen:
-                seen.add(candidate[0])
+            if candidate[0] in title2id:
+                name = candidate[0]
+                prior = candidate[1]
+                redirect = 0
+                surname = 0
+                if prior == -1:
+                    redirect = 1
+                    prior = 0.0
+                elif prior == -2:
+                    surname = 1
+                    prior = 0.0
 
-    return result
+                if name in result:
+                    result[name][1] = max(prior,result[name][1])
+                    result[name][2] = max(redirect, result[name][2])
+                    result[name][3] = max(surname, result[name][3])
+                else:
+                    result[name] = [name,prior,redirect,surname]
+
+    result_l = []
+    for name in result:
+        result_l.append((name,result[name][1],result[name][2],result[name][3]))
+
+    return result_l
 
 
 def process(tokenizer, documents,id2title, title2id, title2filename, redirects, person_candidates, priors_lower, type=''):
@@ -242,15 +255,8 @@ def process(tokenizer, documents,id2title, title2id, title2filename, redirects, 
                             contexts.append(context)
                             abstracts.append(abstract)
                             prior = candidate[1]
-                            redirect = 0
-                            surname = 0
-                            if prior == -1:
-                                redirect = 1
-                                prior = 0.0
-                            elif prior == -2:
-                                surname = 1
-                                prior = 0.0
-
+                            redirect = candidate[2]
+                            surname = candidate[3]
 
                             adds_priors.append(prior)
                             adds_surname.append(surname)

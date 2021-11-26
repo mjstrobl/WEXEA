@@ -250,6 +250,7 @@ def run_test(test_dataset, title2id):
             candidate = candidates[0][1]
             if title2id[candidate] == int(id):
                 correct += 1
+                correct_found += 1
                 one_candidate['correct'] += 1
             else:
                 incorrect += 1
@@ -306,6 +307,7 @@ def run_test(test_dataset, title2id):
                 incorrect += 1
                 more_candidates['incorrect'] += 1
 
+    print("all: " + str(data_length))
     print("correct found: " + str(correct_found))
     print("correct: " + str(correct))
     print("incorrect: " + str(incorrect))

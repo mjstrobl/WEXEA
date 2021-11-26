@@ -12,6 +12,10 @@ from transformers import (
     AdamW, BertTokenizer, BertForNextSentencePrediction
 )
 
+import transformers
+transformers.logging.set_verbosity_error()
+
+
 config = json.load(open('../../config/config.json'))
 outputpath = config['outputpath']
 

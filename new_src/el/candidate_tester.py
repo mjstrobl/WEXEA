@@ -374,15 +374,18 @@ def get_dataset(wexea_directory, tokenizer=None,type=''):
 
 
 
+def main():
+    config = json.load(open('../../config/config.json'))
+    outputpath = config['outputpath']
 
-config = json.load(open('../../config/config.json'))
-outputpath = config['outputpath']
+    wexea_directory = outputpath
 
-wexea_directory = outputpath
+    dataset_dev,test_data_dev = get_dataset(wexea_directory, type='dev')
+    dataset_test, test_data_test = get_dataset(wexea_directory, type='test')
+    dataset_train,test_data_train = get_dataset(wexea_directory, type='train')
 
-dataset_dev,test_data_dev = get_dataset(wexea_directory, type='dev')
-dataset_test, test_data_test = get_dataset(wexea_directory, type='test')
-dataset_train,test_data_train = get_dataset(wexea_directory, type='train')
+if __name__ == "__main__":
+    main()
 
 
 

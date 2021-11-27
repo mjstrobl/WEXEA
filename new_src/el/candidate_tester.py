@@ -360,7 +360,7 @@ def process(documents, id2title, title2id, title2filename, entity_title2filename
 
 
 def get_dataset(wexea_directory, tokenizer=None, type=''):
-    fname = "data/" + type + ".pickle"
+    fname = "data_morecand/" + type + ".pickle"
     if os.path.isfile(fname) and tokenizer != None:
         with open(fname, 'rb') as handle:
             dataset = pickle.load(handle)

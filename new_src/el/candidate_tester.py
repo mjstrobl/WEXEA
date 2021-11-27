@@ -61,7 +61,8 @@ def get_abstract(title, title2filename, entity_title2filename):
                             entities = fe.read()
 
                         abstract_parts = line.split(' ')
-                        line = ' '.join(abstract_parts[:min(MAX_ABSTRACT_LENGTH, len(abstract_parts))])
+                        end = int(min(MAX_ABSTRACT_LENGTH, len(abstract_parts)))
+                        line = ' '.join(abstract_parts[:end])
                         line += ' ' + entities
 
                     ABSTRACTS[title] = line
@@ -101,10 +102,10 @@ def create_candidate_set(candidates, title2id, type=''):
         else:
             r = len(candidates[key]['list'])
             if 'lower' in key:
-                r = min(current_max_cands, len(candidates[key]['list']))
+                r = int(min(current_max_cands, len(candidates[key]['list'])))
 
             if type == 'train':
-                r = min(current_max_cands, len(candidates[key]['list']))
+                r = int(min(current_max_cands, len(candidates[key]['list'])))
 
         for i in range(r):
             if key == 'document_mention':
@@ -298,9 +299,10 @@ def process(documents, id2title, title2id, title2filename, entity_title2filename
 
                         for j in range(len(candidates)):
                             candidate = candidates[j]
-                            abstract = get_abstract(candidate[0],title2filename, entity_title2filename)
-
-                            #abstract = ''
+                            if tokenizer != None:
+                                abstract = get_abstract(candidate[0],title2filename, entity_title2filename)
+                            else:
+                                abstract = ''
                             contexts.append(context)
                             abstracts.append(abstract)
                             prior = candidate[1]
@@ -414,9 +416,11 @@ def get_dataset(wexea_directory, tokenizer=None, type=''):
 
             dataset, test_data = process(documents, id2title, title2id, title2filename, entity_title2filename,
                                          redirects, person_candidates, priors_lower, tokenizer=tokenizer, type=type)
-            with open(fname, 'wb') as handle:
-                pickle.dump(dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
-                pickle.dump(test_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+            if tokenizer != None:
+                with open(fname, 'wb') as handle:
+                    pickle.dump(dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                    pickle.dump(test_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
             print("recreating file.")
             return dataset, test_data

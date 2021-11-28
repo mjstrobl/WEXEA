@@ -318,6 +318,9 @@ for epoch in range(EPOCHS):
     print("test dev")
     run_test(test_data_dev, title2id)
 
+    print("test test")
+    run_test(test_data_test, title2id)
+
 # test_dataset = {'contexts':[], 'candidates':[], 'titles':[]}
 print("test dev")
 run_test(test_data_dev, title2id)

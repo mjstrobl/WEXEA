@@ -40,162 +40,10 @@ EPOCHS = 10
 tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
 num_added_toks = tokenizer.add_tokens(["<e>", "</e>"])
 added_tokens = tokenizer.get_added_vocab()
+entity_start_token_id = added_tokens['<e>']
 print('We have added', num_added_toks, 'tokens')
 model = BertForEntityClassification.from_pretrained('bert-base-cased')
 model.resize_token_embeddings(len(tokenizer))
-
-
-'''class InputFeatures(object):
-    def __init__(self, input_ids_context, attention_mask_context, token_type_ids_context,
-                 input_ids_abstract, attention_mask_abstract, token_type_ids_abstract,
-                 redirect, surname, prior,
-                 label):
-        self.input_ids_context = input_ids_context
-        self.attention_mask_context = attention_mask_context
-        self.token_type_ids_context = token_type_ids_context
-        self.input_ids_abstract = input_ids_abstract
-        self.attention_mask_abstract = attention_mask_abstract
-        self.token_type_ids_abstract = token_type_ids_abstract
-        self.redirect = [redirect]
-        self.surname = [surname]
-        self.prior = [prior]
-        self.label = [label]
-
-    def __repr__(self):
-        return str(self.to_json_string())
-
-    def to_dict(self):
-        output = copy.deepcopy(self.__dict__)
-        return output
-
-    def to_json_string(self):
-        return json.dumps(self.to_dict(), indent=2, sort_keys=True) + "\n"
-
-
-def create_input_feature(tokens, tokenizer, max_length,
-                         cls_token="[CLS]",
-                         cls_token_segment_id=0,
-                         sep_token_segment_id=1,
-                         sep_token="[SEP]",
-                         pad_token=0,
-                         pad_token_segment_id=0,
-                         sequence_a_segment_id=0
-                         ):
-
-    if len(tokens) > max_length - 2:
-        tokens = tokens[:max_length-2]
-
-    token_type_ids = [sequence_a_segment_id] * len(tokens)
-
-    tokens = [cls_token] + tokens + [sep_token]
-    token_type_ids = [cls_token_segment_id] + token_type_ids + [sep_token_segment_id]
-
-    input_ids = tokenizer.convert_tokens_to_ids(tokens)
-
-    # The mask has 1 for real tokens and 0 for padding tokens. Only real
-    # tokens are attended to.
-    attention_mask = [1] * len(input_ids)
-
-    # Zero-pad up to the sequence length.
-    padding_length = max_length - len(input_ids)
-
-    input_ids = input_ids + ([pad_token] * padding_length)
-    attention_mask = attention_mask + ([0] * padding_length)
-    token_type_ids = token_type_ids + ([pad_token_segment_id] * padding_length)
-
-    assert len(input_ids) == max_length, "Error with input length {} vs {}".format(len(input_ids), max_length)
-    assert len(attention_mask) == max_length, "Error with input length {} vs {}".format(
-        len(attention_mask), max_length
-    )
-    assert len(token_type_ids) == max_length, "Error with input length {} vs {}".format(
-        len(token_type_ids), max_length
-    )
-
-    return input_ids, attention_mask, token_type_ids
-
-def create_dataset(features):
-    input_ids_context = torch.tensor([f.input_ids_context for f in features], dtype=torch.long)
-    attention_mask_context = torch.tensor([f.attention_mask_context for f in features], dtype=torch.long)
-    token_type_ids_context = torch.tensor([f.token_type_ids_context for f in features], dtype=torch.long)
-
-    input_ids_abstract = torch.tensor([f.input_ids_abstract for f in features], dtype=torch.long)
-    attention_mask_abstract = torch.tensor([f.attention_mask_abstract for f in features], dtype=torch.long)
-    token_type_ids_abstract = torch.tensor([f.token_type_ids_abstract for f in features], dtype=torch.long)
-
-    prior = torch.tensor([f.prior for f in features], dtype=torch.float)
-    redirect = torch.tensor([f.redirect for f in features], dtype=torch.long)
-    surname = torch.tensor([f.surname for f in features], dtype=torch.long)
-
-    labels = torch.tensor([f.label for f in features], dtype=torch.long)
-
-    dataset = TensorDataset(input_ids_context, attention_mask_context, token_type_ids_context,
-                            input_ids_abstract, attention_mask_abstract, token_type_ids_abstract, redirect, surname, prior, labels)
-
-    return dataset
-
-def process(type=''):
-    fname = "data/" + type + ".pickle"
-    if os.path.isfile(fname):
-        with open(fname, 'rb') as handle:
-            features = pickle.load(handle)
-
-        print("using pickled file.")
-    else:
-
-        id2title = json.load(open(wexea_directory + 'dictionaries/id2title.json'))
-        title2id = json.load(open(wexea_directory + 'dictionaries/title2Id.json'))
-        title2filename = json.load(open(wexea_directory + 'dictionaries/title2filename.json'))
-        redirects = json.load(open(wexea_directory + 'dictionaries/redirects.json'))
-        person_candidates = json.load(open(wexea_directory + 'dictionaries/person_candidates.json'))
-        priors_lower = json.load(open(wexea_directory + 'dictionaries/priors_lower_5.json'))
-
-
-        contexts, abstracts, additionals, labels = get_dataset(id2title, title2id, title2filename, redirects, person_candidates, priors_lower,type)
-
-        features = []
-        for i in range(len(contexts)):
-            context = contexts[i]
-            abstract = abstracts[i]
-            additional = additionals[i]
-            label = labels[i]
-
-            prior = additional[0]
-            redirect = additional[1]
-            surname = additional[2]
-
-            abstract_tokens = tokenizer.tokenize(abstract)
-            context_tokens = []
-
-            if len(context) > 3:
-                context_tokens.extend(tokenizer.tokenize(context[3]))
-
-            context_tokens.extend(tokenizer.tokenize(context[0]))
-            context_tokens.extend(tokenizer.tokenize("<e>"))
-            context_tokens.extend(tokenizer.tokenize(context[1]))
-            context_tokens.extend(tokenizer.tokenize("</e>"))
-            context_tokens.extend(tokenizer.tokenize(context[2]))
-
-            if len(context) > 3:
-                context_tokens.extend(tokenizer.tokenize(context[4]))
-
-            input_ids_context, attention_mask_context, token_type_ids_context = create_input_feature(context_tokens,
-                                                                                                     tokenizer,
-                                                                                                     MAX_SENT_LENGTH)
-            input_ids_abstract, attention_mask_abstract, token_type_ids_abstract = create_input_feature(abstract_tokens,
-                                                                                                        tokenizer,
-                                                                                                        MAX_SENT_LENGTH)
-
-            features.append(InputFeatures(input_ids_context, attention_mask_context, token_type_ids_context, input_ids_abstract,
-                          attention_mask_abstract, token_type_ids_abstract, redirect, surname, prior, label))
-
-        with open(fname, 'wb') as handle:
-            pickle.dump(features, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-        print("recreating file.")
-
-    dataset = create_dataset(features)
-
-    return dataset'''
 
 
 def metrics(preds, out_label_ids):
@@ -274,6 +122,29 @@ def run_test(test_dataset, title2id):
 
                 inputs = tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=128, truncation=True,
                                    padding='max_length')
+                input_ids = inputs['input_ids']
+                entity_mask_tensors = []
+                b = torch.Tensor(len(input_ids), len(input_ids[0]), 768)
+                for i in range(len(input_ids)):
+                    # for each mention
+                    entity_start_token = -1
+                    for j in range(len(input_ids[i])):
+                        if input_ids[i][j] == entity_start_token_id:
+                            entity_start_token = j
+                            break
+
+                    entity_mask = [False] * len(input_ids[i])
+                    entity_mask[entity_start_token] = True
+                    entity_mask_tensor = torch.zeros([len(input_ids[i]), 768], dtype=torch.bool)
+                    for j in range(len(input_ids[i])):
+                        entity_mask_tensor[j] = torch.zeros(768).fill_(entity_mask[j])
+                    b[i] = entity_mask_tensor
+
+                inputs['entity_mask'] = b
+
+
+
+
                 inputs['priors'] = torch.FloatTensor([ps]).T
                 inputs['redirects'] = torch.FloatTensor([res]).T
                 inputs['surnames'] = torch.FloatTensor([ss]).T
@@ -281,11 +152,12 @@ def run_test(test_dataset, title2id):
                 input_ids = inputs['input_ids'].to(device)
                 token_type_ids = inputs['token_type_ids'].to(device)
                 attention_mask = inputs['attention_mask'].to(device)
+                entity_mask = inputs['entity_mask'].to(device)
                 adds_redirect = inputs['redirects'].to(device)
                 adds_prior = inputs['priors'].to(device)
                 adds_surname = inputs['surnames'].to(device)
 
-                outputs = model(input_ids, attention_mask=attention_mask, adds_redirect=adds_redirect,
+                outputs = model(input_ids, attention_mask=attention_mask, entity_mask=entity_mask, adds_redirect=adds_redirect,
                                 adds_surname=adds_surname,
                                 token_type_ids=token_type_ids, adds_prior=adds_prior)
 
@@ -332,6 +204,7 @@ def evaluate(loader):
         input_ids = batch['input_ids'].to(device)
         token_type_ids = batch['token_type_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
+        entity_mask = batch['entity_mask'].to(device)
         adds_redirect = batch['redirects'].to(device)
         adds_prior = batch['priors'].to(device)
         adds_surname = batch['surnames'].to(device)
@@ -340,7 +213,7 @@ def evaluate(loader):
 
 
         with torch.no_grad():
-            outputs = model(input_ids, attention_mask=attention_mask, adds_redirect=adds_redirect,
+            outputs = model(input_ids, attention_mask=attention_mask, entity_mask=entity_mask, adds_redirect=adds_redirect,
                             adds_surname=adds_surname,
                             token_type_ids=token_type_ids, adds_prior=adds_prior,
                             labels=labels)
@@ -371,9 +244,14 @@ def evaluate(loader):
 
 
 
-dataset_dev,test_data_dev = get_dataset(wexea_directory,tokenizer=tokenizer, type='dev')
-dataset_test, test_data_test = get_dataset(wexea_directory,tokenizer=tokenizer, type='test')
-dataset_train,test_data_train = get_dataset(wexea_directory,tokenizer=tokenizer, type='train')
+dataset_dev,test_data_dev = get_dataset(wexea_directory,entity_start_token_id,tokenizer=tokenizer, type='dev')
+dataset_test, test_data_test = get_dataset(wexea_directory,entity_start_token_id,tokenizer=tokenizer, type='test')
+dataset_train,test_data_train = get_dataset(wexea_directory,entity_start_token_id,tokenizer=tokenizer, type='train')
+
+'''dataset_train = dataset_dev
+dataset_test = dataset_dev
+test_data_train = test_data_dev
+test_data_test = test_data_dev'''
 
 title2id = json.load(open(wexea_directory + 'dictionaries/title2Id.json'))
 
@@ -411,27 +289,16 @@ for epoch in range(EPOCHS):
         optim.zero_grad()
         # pull all tensor batches required for training
 
-
-        '''input_ids_context = batch[0].to(device)
-        token_type_ids_context = batch[1].to(device)
-        attention_mask_context = batch[2].to(device)
-        input_ids_abstract = batch[3].to(device)
-        token_type_ids_abstract = batch[4].to(device)
-        attention_mask_abstract = batch[5].to(device)
-        redirect = batch[6].to(device)
-        surname = batch[7].to(device)
-        prior = batch[8].to(device)
-        label = batch[9].to(device)'''
-
         input_ids = batch['input_ids'].to(device)
         token_type_ids = batch['token_type_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
+        entity_mask = batch['entity_mask'].to(device)
         adds_redirect = batch['redirects'].to(device)
         adds_prior = batch['priors'].to(device)
         adds_surname = batch['surnames'].to(device)
         labels = batch['labels'].to(device)
 
-        outputs = model(input_ids, attention_mask=attention_mask, adds_redirect=adds_redirect, adds_surname=adds_surname,
+        outputs = model(input_ids, attention_mask=attention_mask, entity_mask=entity_mask, adds_redirect=adds_redirect, adds_surname=adds_surname,
                         token_type_ids=token_type_ids, adds_prior=adds_prior,
                         labels=labels)
         # extract loss

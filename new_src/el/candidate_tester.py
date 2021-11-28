@@ -16,9 +16,9 @@ from transformers import (
 RE_LINKS = re.compile(r'\[{2}(.*?)\]{2}', re.DOTALL | re.UNICODE)
 
 MAX_SENT_LENGTH = 128
-MAX_ABSTRACT_LENGTH = MAX_SENT_LENGTH/4
+MAX_ABSTRACT_LENGTH = MAX_SENT_LENGTH / 4
 
-MAX_NUM_CANDIDATES = 50
+MAX_NUM_CANDIDATES = 3
 
 ABSTRACTS = {}
 
@@ -155,7 +155,8 @@ def create_candidate_set(candidates, title2id, type=''):
     return result_l
 
 
-def get_candidates(mention_upper, id2title, title2id, redirects, person_candidates, priors_lower, document_mentions,type=''):
+def get_candidates(mention_upper, id2title, title2id, redirects, person_candidates, priors_lower, document_mentions,
+                   type=''):
     mention = unidecode(mention_upper).lower()
     mention_parts = mention_upper.split()
     mention_lower_cleaned = ''
@@ -216,13 +217,13 @@ def get_candidates(mention_upper, id2title, title2id, redirects, person_candidat
         type_found.append('surname')
         candidates['surname'] = person_candidates[surname]
 
-
     candidates = create_candidate_set(candidates, title2id, type=type)
 
     return candidates
 
 
-def process(documents, id2title, title2id, title2filename, entity_title2filename, redirects, person_candidates,
+def process(documents, entity_start_token_id, id2title, title2id, title2filename, entity_title2filename, redirects,
+            person_candidates,
             priors_lower, tokenizer=None, type=''):
     labels = []
     contexts = []
@@ -257,8 +258,6 @@ def process(documents, id2title, title2id, title2filename, entity_title2filename
                 all += 1
                 start = tuple[0]
                 id = tuple[1]
-
-
 
                 end = tuple[2]
                 mention_upper = ' '.join(sentence[start:end])
@@ -300,7 +299,7 @@ def process(documents, id2title, title2id, title2filename, entity_title2filename
                         for j in range(len(candidates)):
                             candidate = candidates[j]
                             if tokenizer != None:
-                                abstract = get_abstract(candidate[0],title2filename, entity_title2filename)
+                                abstract = get_abstract(candidate[0], title2filename, entity_title2filename)
                             else:
                                 abstract = ''
                             contexts.append(context)
@@ -326,7 +325,6 @@ def process(documents, id2title, title2id, title2filename, entity_title2filename
                         else:
                             correct_not_found += 1
 
-
                         test_data['candidates'].append(candidate_l)
 
                     else:
@@ -341,12 +339,32 @@ def process(documents, id2title, title2id, title2filename, entity_title2filename
                     test_data['contexts'].append(context)
                     test_data['candidates'].append([])
 
-
     print(counter)
     dataset = None
     if tokenizer != None:
         inputs = tokenizer(contexts, abstracts, return_tensors='pt', max_length=MAX_SENT_LENGTH, truncation=True,
                            padding='max_length')
+
+        input_ids = inputs['input_ids']
+
+        entity_mask_tensors = []
+        b = torch.Tensor(len(input_ids), len(input_ids[0]), 768)
+        for i in range(len(input_ids)):
+            # for each mention
+            entity_start_token = -1
+            for j in range(len(input_ids[i])):
+                if input_ids[i][j] == entity_start_token_id:
+                    entity_start_token = j
+                    break
+
+            entity_mask = [False] * len(input_ids[i])
+            entity_mask[entity_start_token] = True
+            entity_mask_tensor = torch.zeros([len(input_ids[i]), 768], dtype=torch.bool)
+            for j in range(len(input_ids[i])):
+                entity_mask_tensor[j] = torch.zeros(768).fill_(entity_mask[j])
+            b[i] = entity_mask_tensor
+
+        inputs['entity_mask'] = b
         inputs['labels'] = torch.LongTensor([labels]).T
         inputs['priors'] = torch.FloatTensor([adds_priors]).T
         inputs['redirects'] = torch.FloatTensor([adds_redirects]).T
@@ -361,7 +379,7 @@ def process(documents, id2title, title2id, title2filename, entity_title2filename
     return dataset, test_data
 
 
-def get_dataset(wexea_directory, tokenizer=None, type=''):
+def get_dataset(wexea_directory, entity_start_token_id, tokenizer=None, type=''):
     fname = "data_morecand/" + type + ".pickle"
     if os.path.isfile(fname) and tokenizer != None:
         with open(fname, 'rb') as handle:
@@ -412,9 +430,10 @@ def get_dataset(wexea_directory, tokenizer=None, type=''):
             if len(current_document) > 0:
                 documents.append(current_document)
 
-            # documents = documents[:10]
+            #documents = documents[:10]
 
-            dataset, test_data = process(documents, id2title, title2id, title2filename, entity_title2filename,
+            dataset, test_data = process(documents, entity_start_token_id, id2title, title2id, title2filename,
+                                         entity_title2filename,
                                          redirects, person_candidates, priors_lower, tokenizer=tokenizer, type=type)
 
             if tokenizer != None:
@@ -432,9 +451,9 @@ def main():
 
     wexea_directory = outputpath
 
-    dataset_dev, test_data_dev = get_dataset(wexea_directory, type='dev')
-    dataset_test, test_data_test = get_dataset(wexea_directory, type='test')
-    dataset_train, test_data_train = get_dataset(wexea_directory, type='train')
+    dataset_dev, test_data_dev = get_dataset(wexea_directory, 0 , type='dev')
+    dataset_test, test_data_test = get_dataset(wexea_directory, 0, type='test')
+    dataset_train, test_data_train = get_dataset(wexea_directory, 0, type='train')
 
 
 if __name__ == "__main__":

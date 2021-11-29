@@ -76,7 +76,9 @@ class BertForEntityClassification(BertPreTrainedModel):
 
         #entity_hidden_state_1 = torch.mul(outputs.last_hidden_state,entity_mask)
 
-        entity_hidden_state_1 = outputs.last_hidden_state[entity_mask,:]
+        entity_hidden_state_1 = outputs.pooled_output
+        print(entity_hidden_state_1.shape)
+        #entity_hidden_state_1 = outputs.last_hidden_state[entity_mask,:]
         #entity_hidden_state_1 = torch.masked_select(outputs.last_hidden_state, entity_mask)
         #entity_hidden_state_2 = torch.sum(entity_hidden_state_1,dim=1)
 

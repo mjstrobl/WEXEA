@@ -18,7 +18,7 @@ RE_LINKS = re.compile(r'\[{2}(.*?)\]{2}', re.DOTALL | re.UNICODE)
 MAX_SENT_LENGTH = 128
 MAX_ABSTRACT_LENGTH = MAX_SENT_LENGTH / 4
 
-MAX_NUM_CANDIDATES = 50
+MAX_NUM_CANDIDATES = 30
 
 ABSTRACTS = {}
 
@@ -357,11 +357,15 @@ def process(documents, entity_start_token_id, id2title, title2id, title2filename
                     entity_start_token = j
                     break
 
-            entity_mask = [False] * len(input_ids[i])
-            entity_mask[entity_start_token] = True
+            #entity_mask = [False] * len(input_ids[i])
+            #entity_mask[entity_start_token] = True
+            entity_mask_tensor = torch.zeros([len(input_ids[i]), 1], dtype=torch.bool)
+            entity_mask_tensor[entity_start_token] = torch.zeros(1).fill_(True)
+
+            '''entity_mask[entity_start_token] = True
             entity_mask_tensor = torch.zeros([len(input_ids[i]), 768], dtype=torch.bool)
             for j in range(len(input_ids[i])):
-                entity_mask_tensor[j] = torch.zeros(768).fill_(entity_mask[j])
+                entity_mask_tensor[j] = torch.zeros(768).fill_(entity_mask[j])'''
             b[i] = entity_mask_tensor
 
         inputs['entity_mask'] = b

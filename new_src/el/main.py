@@ -123,8 +123,8 @@ def run_test(test_dataset, title2id):
                 inputs = tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=128, truncation=True,
                                    padding='max_length')
                 input_ids = inputs['input_ids']
-                entity_mask_tensors = []
-                b = torch.Tensor(len(input_ids), len(input_ids[0]), 768)
+
+                b = []
                 for i in range(len(input_ids)):
                     # for each mention
                     entity_start_token = -1
@@ -135,16 +135,9 @@ def run_test(test_dataset, title2id):
 
                     entity_mask = [False] * len(input_ids[i])
                     entity_mask[entity_start_token] = True
-                    entity_mask_tensor = torch.zeros([len(input_ids[i]), 768], dtype=torch.bool)
-                    for j in range(len(input_ids[i])):
-                        entity_mask_tensor[j] = torch.zeros(768).fill_(entity_mask[j])
-                    b[i] = entity_mask_tensor
+                    b.append(entity_mask)
 
-                inputs['entity_mask'] = b
-
-
-
-
+                inputs['entity_mask'] = torch.tensor(b, dtype=torch.bool)
                 inputs['priors'] = torch.FloatTensor([ps]).T
                 inputs['redirects'] = torch.FloatTensor([res]).T
                 inputs['surnames'] = torch.FloatTensor([ss]).T

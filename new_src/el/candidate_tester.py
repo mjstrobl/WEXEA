@@ -347,7 +347,6 @@ def process(documents, entity_start_token_id, id2title, title2id, title2filename
 
         input_ids = inputs['input_ids']
 
-        entity_mask_tensors = []
         b = []
         for i in range(len(input_ids)):
             # for each mention
@@ -359,13 +358,6 @@ def process(documents, entity_start_token_id, id2title, title2id, title2filename
 
             entity_mask = [False] * len(input_ids[i])
             entity_mask[entity_start_token] = True
-            #entity_mask_tensor = torch.zeros([len(input_ids[i]), 1], dtype=torch.bool)
-            #entity_mask_tensor[entity_start_token] = torch.zeros(1).fill_(True)
-
-            '''entity_mask[entity_start_token] = True
-            entity_mask_tensor = torch.zeros([len(input_ids[i]), 768], dtype=torch.bool)
-            for j in range(len(input_ids[i])):
-                entity_mask_tensor[j] = torch.zeros(768).fill_(entity_mask[j])'''
             b.append(entity_mask)
 
         inputs['entity_mask'] = torch.tensor(b, dtype=torch.bool)

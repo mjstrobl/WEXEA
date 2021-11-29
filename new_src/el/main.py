@@ -194,11 +194,13 @@ def run_test(test_dataset, title2id, preds):
 
 
 def evaluate(loader):
-    eval_loss = 0.0
+    loss_acc = 0.0
     nb_eval_steps = 0
     preds = None
     out_label_ids = None
+    batches = 0.0
     for batch in tqdm(loader, desc="Evaluating"):
+        batches += 1.0
         model.eval()
 
         input_ids = batch['input_ids'].to(device)
@@ -221,7 +223,7 @@ def evaluate(loader):
             tmp_eval_loss = outputs.loss
             logits = outputs.logits
 
-            eval_loss += tmp_eval_loss.mean().item()
+            loss_acc += tmp_eval_loss.item()
         nb_eval_steps += 1
         if preds is None:
             preds = logits.detach().cpu().numpy()
@@ -231,6 +233,8 @@ def evaluate(loader):
             out_label_ids = np.append(out_label_ids, labels.detach().cpu().numpy(), axis=0)
 
 
+    loss_acc = loss_acc / batches
+    print("loss: %f" % (loss_acc))
     max_preds = np.argmax(preds, axis=1)
     precision, recall, f1, tp, fp, fn = metrics(max_preds, out_label_ids)
     print("precision: %f, recall: %f, f1: %f" % (precision, recall, f1))

@@ -75,7 +75,7 @@ def metrics(preds, out_label_ids):
     return precision, recall, f1, tp, fp, fn
 
 
-def run_test(test_dataset, title2id):
+def run_test(test_dataset, title2id, preds):
     correct = 0
     incorrect = 0
 
@@ -86,6 +86,7 @@ def run_test(test_dataset, title2id):
     more_candidates = {'correct': 0, 'incorrect': 0}
 
     data_length = len(test_dataset['contexts'])
+    preds_idx = 0
     for i in range(data_length):
         context = test_dataset['contexts'][i]
         candidates = test_dataset['candidates'][i]
@@ -103,12 +104,13 @@ def run_test(test_dataset, title2id):
             else:
                 incorrect += 1
                 one_candidate['incorrect'] += 1
+            preds_idx += 1
         else:
             best_candidate_pred = 0.0
             best_candidate = None
             for j in range(len(candidates)):
                 #candidate_l.append((candidate[0], prior, redirect, surname, abstract))
-                abstract = candidates[j][4]
+                '''abstract = candidates[j][4]
                 candidate = candidates[j][0]
                 prior = candidates[j][1]
                 redirect = candidates[j][2]
@@ -156,8 +158,9 @@ def run_test(test_dataset, title2id):
 
                 logits = outputs.logits
 
-                preds = logits.detach().cpu().numpy()
-                f_x = np.exp(preds[0]) / np.sum(np.exp(preds[0]))
+                preds = logits.detach().cpu().numpy()'''
+
+                f_x = np.exp(preds[preds_idx]) / np.sum(np.exp(preds[preds_idx]))
                 prediction = f_x[1]
                 if prediction > best_candidate_pred:
                     best_candidate_pred = prediction
@@ -165,6 +168,8 @@ def run_test(test_dataset, title2id):
 
                 if int(id) == title2id[candidate]:
                     correct_found += 1
+
+                preds_idx += 1
 
             if int(id) == title2id[best_candidate]:
                 correct += 1
@@ -223,10 +228,13 @@ def evaluate(loader):
             preds = np.append(preds, logits.detach().cpu().numpy(), axis=0)
             out_label_ids = np.append(out_label_ids, labels.detach().cpu().numpy(), axis=0)
 
-    preds = np.argmax(preds, axis=1)
-    precision, recall, f1, tp, fp, fn = metrics(preds, out_label_ids)
+
+    max_preds = np.argmax(preds, axis=1)
+    precision, recall, f1, tp, fp, fn = metrics(max_preds, out_label_ids)
     print("precision: %f, recall: %f, f1: %f" % (precision, recall, f1))
     print("tp: %d, fp: %d, fn: %d" % (tp, fp, fn))
+
+    return preds
 
 
 
@@ -270,6 +278,10 @@ optim = AdamW(optimizer_grouped_parameters, lr=learning_rate, eps=adam_epsilon)
 
 model.to(device)
 
+preds_test = evaluate(loader_dev)
+print("test test")
+run_test(test_data_test, title2id, preds_test)
+
 for epoch in range(EPOCHS):
     # setup loop with TQDM and dataloader
     loop = tqdm(loader_train, leave=True)
@@ -307,19 +319,14 @@ for epoch in range(EPOCHS):
         loop.set_description(f'Epoch {epoch}')
         loop.set_postfix(loss=loss_acc / batches)
 
-    evaluate(loader_dev)
+    preds_dev = evaluate(loader_dev)
     print("test dev")
-    run_test(test_data_dev, title2id)
+    run_test(test_data_dev, title2id, preds_dev)
 
+    preds_test = evaluate(loader_dev)
     print("test test")
-    run_test(test_data_test, title2id)
+    run_test(test_data_test, title2id, preds_test)
 
-# test_dataset = {'contexts':[], 'candidates':[], 'titles':[]}
-print("test dev")
-run_test(test_data_dev, title2id)
-
-print("test test")
-run_test(test_data_test, title2id)
 
 
 

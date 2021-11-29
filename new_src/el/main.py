@@ -261,6 +261,7 @@ title2id = json.load(open(wexea_directory + 'dictionaries/title2Id.json'))
 
 loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=16, shuffle=True)
 loader_dev = torch.utils.data.DataLoader(dataset_dev, batch_size=16, shuffle=False)
+loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=16, shuffle=False)
 
 weight_decay = 0.0
 learning_rate = 1e-5
@@ -321,7 +322,7 @@ for epoch in range(EPOCHS):
     print("test dev")
     run_test(test_data_dev, title2id, preds_dev)
 
-    preds_test = evaluate(loader_dev)
+    preds_test = evaluate(loader_test)
     print("test test")
     run_test(test_data_test, title2id, preds_test)
 

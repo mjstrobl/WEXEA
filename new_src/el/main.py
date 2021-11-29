@@ -110,8 +110,10 @@ def run_test(test_dataset, title2id, preds):
             best_candidate = None
             for j in range(len(candidates)):
                 #candidate_l.append((candidate[0], prior, redirect, surname, abstract))
-                '''abstract = candidates[j][4]
+
                 candidate = candidates[j][0]
+
+                '''abstract = candidates[j][4]
                 prior = candidates[j][1]
                 redirect = candidates[j][2]
                 surname = candidates[j][3]

@@ -280,10 +280,6 @@ optim = AdamW(optimizer_grouped_parameters, lr=learning_rate, eps=adam_epsilon)
 
 model.to(device)
 
-preds_test = evaluate(loader_dev)
-print("test test")
-run_test(test_data_test, title2id, preds_test)
-
 for epoch in range(EPOCHS):
     # setup loop with TQDM and dataloader
     loop = tqdm(loader_train, leave=True)

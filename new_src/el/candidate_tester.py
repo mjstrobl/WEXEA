@@ -18,7 +18,7 @@ RE_LINKS = re.compile(r'\[{2}(.*?)\]{2}', re.DOTALL | re.UNICODE)
 MAX_SENT_LENGTH = 128
 MAX_ABSTRACT_LENGTH = MAX_SENT_LENGTH / 4
 
-MAX_NUM_CANDIDATES = 30
+MAX_NUM_CANDIDATES = 10
 
 ABSTRACTS = {}
 
@@ -92,8 +92,8 @@ def create_mention_strings(mention):
 
 def create_candidate_set(candidates, title2id, type=''):
     current_max_cands = MAX_NUM_CANDIDATES
-    if type == 'train':
-        current_max_cands = 10
+    #if type == 'train':
+    #    current_max_cands = 10
 
     result = {}
     for key in candidates:
@@ -106,6 +106,8 @@ def create_candidate_set(candidates, title2id, type=''):
 
             if type == 'train':
                 r = int(min(current_max_cands, len(candidates[key]['list'])))
+
+            r = int(min(current_max_cands, len(candidates[key]['list'])))
 
         for i in range(r):
             if key == 'document_mention':
@@ -339,13 +341,12 @@ def process(documents, entity_start_token_id, id2title, title2id, title2filename
                     test_data['contexts'].append(context)
                     test_data['candidates'].append([])
 
-    print(counter)
     dataset = None
     if tokenizer != None:
         inputs = tokenizer(contexts, abstracts, return_tensors='pt', max_length=MAX_SENT_LENGTH, truncation=True,
                            padding='max_length')
 
-        input_ids = inputs['input_ids']
+        '''input_ids = inputs['input_ids']
 
         b = []
         for i in range(len(input_ids)):
@@ -360,13 +361,14 @@ def process(documents, entity_start_token_id, id2title, title2id, title2filename
             entity_mask[entity_start_token] = True
             b.append(entity_mask)
 
-        inputs['entity_mask'] = torch.tensor(b, dtype=torch.bool)
+        inputs['entity_mask'] = torch.tensor(b, dtype=torch.bool)'''
         inputs['labels'] = torch.LongTensor([labels]).T
         inputs['priors'] = torch.FloatTensor([adds_priors]).T
         inputs['redirects'] = torch.FloatTensor([adds_redirects]).T
         inputs['surnames'] = torch.FloatTensor([adds_surname]).T
         dataset = OurDataset(inputs)
 
+    print(counter)
     print("all: " + str(all))
     print("correct found: " + str(correct_found))
     print("correct not found: " + str(correct_not_found))
@@ -376,7 +378,7 @@ def process(documents, entity_start_token_id, id2title, title2id, title2filename
 
 
 def get_dataset(wexea_directory, entity_start_token_id, tokenizer=None, type=''):
-    fname = "data_morecand/" + type + ".pickle"
+    fname = "data/" + type + ".pickle"
     if os.path.isfile(fname) and tokenizer != None:
         with open(fname, 'rb') as handle:
             dataset = pickle.load(handle)

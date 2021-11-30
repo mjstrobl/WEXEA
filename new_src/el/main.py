@@ -113,55 +113,6 @@ def run_test(test_dataset, title2id, preds):
 
                 candidate = candidates[j][0]
 
-                '''abstract = candidates[j][4]
-                prior = candidates[j][1]
-                redirect = candidates[j][2]
-                surname = candidates[j][3]
-
-                sentence_a = [context]
-                sentence_b = [abstract]
-                ps = [prior]
-                ss = [surname]
-                res = [redirect]
-
-                inputs = tokenizer(sentence_a, sentence_b, return_tensors='pt', max_length=128, truncation=True,
-                                   padding='max_length')
-                input_ids = inputs['input_ids']
-
-                b = []
-                for i in range(len(input_ids)):
-                    # for each mention
-                    entity_start_token = -1
-                    for j in range(len(input_ids[i])):
-                        if input_ids[i][j] == entity_start_token_id:
-                            entity_start_token = j
-                            break
-
-                    entity_mask = [False] * len(input_ids[i])
-                    entity_mask[entity_start_token] = True
-                    b.append(entity_mask)
-
-                inputs['entity_mask'] = torch.tensor(b, dtype=torch.bool)
-                inputs['priors'] = torch.FloatTensor([ps]).T
-                inputs['redirects'] = torch.FloatTensor([res]).T
-                inputs['surnames'] = torch.FloatTensor([ss]).T
-
-                input_ids = inputs['input_ids'].to(device)
-                token_type_ids = inputs['token_type_ids'].to(device)
-                attention_mask = inputs['attention_mask'].to(device)
-                entity_mask = inputs['entity_mask'].to(device)
-                adds_redirect = inputs['redirects'].to(device)
-                adds_prior = inputs['priors'].to(device)
-                adds_surname = inputs['surnames'].to(device)
-
-                outputs = model(input_ids, attention_mask=attention_mask, entity_mask=entity_mask, adds_redirect=adds_redirect,
-                                adds_surname=adds_surname,
-                                token_type_ids=token_type_ids, adds_prior=adds_prior)
-
-                logits = outputs.logits
-
-                preds = logits.detach().cpu().numpy()'''
-
                 f_x = np.exp(preds[preds_idx]) / np.sum(np.exp(preds[preds_idx]))
                 prediction = f_x[1]
                 if prediction > best_candidate_pred:
@@ -206,7 +157,8 @@ def evaluate(loader):
         input_ids = batch['input_ids'].to(device)
         token_type_ids = batch['token_type_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
-        entity_mask = batch['entity_mask'].to(device)
+        #entity_mask = batch['entity_mask'].to(device)
+        entity_mask = None
         adds_redirect = batch['redirects'].to(device)
         adds_prior = batch['priors'].to(device)
         adds_surname = batch['surnames'].to(device)
@@ -284,7 +236,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 optim = AdamW(optimizer_grouped_parameters, lr=learning_rate, eps=adam_epsilon)
 
 model.to(device)
-
+global_step = 0
 for epoch in range(EPOCHS):
     # setup loop with TQDM and dataloader
     loop = tqdm(loader_train, leave=True)
@@ -292,7 +244,7 @@ for epoch in range(EPOCHS):
     batches = 0.0
     for batch in loop:
         batches += 1.0
-
+        global_step += 1
         # initialize calculated gradients (from prev step)
         optim.zero_grad()
         # pull all tensor batches required for training
@@ -300,7 +252,8 @@ for epoch in range(EPOCHS):
         input_ids = batch['input_ids'].to(device)
         token_type_ids = batch['token_type_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
-        entity_mask = batch['entity_mask'].to(device)
+        #entity_mask = batch['entity_mask'].to(device)
+        entity_mask = None
         adds_redirect = batch['redirects'].to(device)
         adds_prior = batch['priors'].to(device)
         adds_surname = batch['surnames'].to(device)
@@ -321,6 +274,19 @@ for epoch in range(EPOCHS):
         # print relevant info to progress bar
         loop.set_description(f'Epoch {epoch}')
         loop.set_postfix(loss=loss_acc / batches)
+
+    output_dir = os.path.join('models/', "checkpoint-{}".format(global_step))
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    model_to_save = (
+        model.module if hasattr(model, "module") else model
+    )  # Take care of distributed/parallel training
+    model_to_save.save_pretrained(output_dir)
+    tokenizer.save_pretrained(output_dir)
+
+    print("saved model in " + output_dir)
+
+
 
     preds_dev = evaluate(loader_dev)
     print("test dev")

@@ -63,7 +63,7 @@ def metrics(preds, out_label_ids):
 
 
 
-def evaluate(loader):
+def evaluate(model, loader):
     loss_acc = 0.0
     nb_eval_steps = 0
     preds = None
@@ -135,7 +135,7 @@ one_candidate = {'correct': 0, 'incorrect': 0}
 zero_candidate = 0
 more_candidates = {'correct': 0, 'incorrect': 0}
 
-preds_dev = evaluate(loader_dev)
+preds_dev = evaluate(model, loader_dev)
 
 data_length = len(test_data_dev['contexts'])
 preds_idx = 0
@@ -192,7 +192,7 @@ for i in range(data_length):
                 line += tuple[0] + ' (' + pred + ')    '
             line = line.strip()
 
-            print(id2title[int(id)])
+            print(id2title[id])
             print(line)
             print(context)
             print()

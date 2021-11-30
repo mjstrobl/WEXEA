@@ -379,7 +379,7 @@ def process(documents, entity_start_token_id, id2title, title2id, title2filename
 
 def get_dataset(wexea_directory, entity_start_token_id, tokenizer=None, type=''):
     fname = "data/" + type + ".pickle"
-    if os.path.isfile(fname) and tokenizer != None:
+    if os.path.isfile(fname):
         with open(fname, 'rb') as handle:
             dataset = pickle.load(handle)
             test_data = pickle.load(handle)

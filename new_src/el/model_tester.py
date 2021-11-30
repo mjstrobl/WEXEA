@@ -160,6 +160,7 @@ for i in range(data_length):
     else:
         best_candidate_pred = 0.0
         best_candidate = None
+        results = []
         for j in range(len(candidates)):
             #candidate_l.append((candidate[0], prior, redirect, surname, abstract))
 
@@ -174,6 +175,8 @@ for i in range(data_length):
             if int(id) == title2id[candidate]:
                 correct_found += 1
 
+            results.append((candidate,prediction))
+
             preds_idx += 1
 
         if int(id) == title2id[best_candidate]:
@@ -182,10 +185,18 @@ for i in range(data_length):
         else:
             incorrect += 1
 
+            results.sort(key=lambda x:x[1],reverse=True)
+            line = ''
+            for tuple in results:
+                pred = "{:.2f}".format(tuple[1])
+                line += tuple[0] + ' (' + pred + ')    '
+            line = line.strip()
+
             print(id2title[int(id)])
-            print(best_candidate)
+            print(line)
             print(context)
             print()
+
             more_candidates['incorrect'] += 1
 
 print("all: " + str(data_length))

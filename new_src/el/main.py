@@ -36,13 +36,14 @@ class OurDataset(torch.utils.data.Dataset):
 
 MAX_SENT_LENGTH = 128
 EPOCHS = 10
+MODEL_NAME = 'bert-base-cased'
 
-tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+tokenizer = BertTokenizer.from_pretrained(MODEL_NAME)
 num_added_toks = tokenizer.add_tokens(["<e>", "</e>"])
 added_tokens = tokenizer.get_added_vocab()
 entity_start_token_id = added_tokens['<e>']
 print('We have added', num_added_toks, 'tokens')
-model = BertForEntityClassification.from_pretrained('bert-base-cased')
+model = BertForEntityClassification.from_pretrained(MODEL_NAME)
 model.resize_token_embeddings(len(tokenizer))
 
 
@@ -157,8 +158,9 @@ def evaluate(loader):
         input_ids = batch['input_ids'].to(device)
         token_type_ids = batch['token_type_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
-        #entity_mask = batch['entity_mask'].to(device)
-        entity_mask = None
+        entity_mask_start = batch['entity_mask_start'].to(device)
+        entity_mask_end = batch['entity_mask_end'].to(device)
+        #entity_mask = None
         adds_redirect = batch['redirects'].to(device)
         adds_prior = batch['priors'].to(device)
         adds_surname = batch['surnames'].to(device)
@@ -167,7 +169,7 @@ def evaluate(loader):
 
 
         with torch.no_grad():
-            outputs = model(input_ids, attention_mask=attention_mask, entity_mask=entity_mask, adds_redirect=adds_redirect,
+            outputs = model(input_ids, attention_mask=attention_mask, entity_mask_start=entity_mask_start, entity_mask_end=entity_mask_end, adds_redirect=adds_redirect,
                             adds_surname=adds_surname,
                             token_type_ids=token_type_ids, adds_prior=adds_prior,
                             labels=labels)
@@ -252,14 +254,15 @@ for epoch in range(EPOCHS):
         input_ids = batch['input_ids'].to(device)
         token_type_ids = batch['token_type_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
-        #entity_mask = batch['entity_mask'].to(device)
-        entity_mask = None
+        entity_mask_start = batch['entity_mask_start'].to(device)
+        entity_mask_end = batch['entity_mask_end'].to(device)
+        #entity_mask = None
         adds_redirect = batch['redirects'].to(device)
         adds_prior = batch['priors'].to(device)
         adds_surname = batch['surnames'].to(device)
         labels = batch['labels'].to(device)
 
-        outputs = model(input_ids, attention_mask=attention_mask, entity_mask=entity_mask, adds_redirect=adds_redirect, adds_surname=adds_surname,
+        outputs = model(input_ids, attention_mask=attention_mask, entity_mask_start=entity_mask_start, entity_mask_end=entity_mask_end, adds_redirect=adds_redirect, adds_surname=adds_surname,
                         token_type_ids=token_type_ids, adds_prior=adds_prior,
                         labels=labels)
         # extract loss

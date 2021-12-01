@@ -18,6 +18,8 @@ RE_LINKS = re.compile(r'\[{2}(.*?)\]{2}', re.DOTALL | re.UNICODE)
 MAX_SENT_LENGTH = 128
 MAX_ABSTRACT_LENGTH = MAX_SENT_LENGTH / 4
 
+DATA_DIRECTORY = 'data/start_token/'
+
 MAX_NUM_CANDIDATES = 10
 
 ABSTRACTS = {}
@@ -224,7 +226,7 @@ def get_candidates(mention_upper, id2title, title2id, redirects, person_candidat
     return candidates
 
 
-def process(documents, entity_start_token_id, id2title, title2id, title2filename, entity_title2filename, redirects,
+def process(documents, entity_start_token_id, entity_end_token_id, id2title, title2id, title2filename, entity_title2filename, redirects,
             person_candidates,
             priors_lower, tokenizer=None, type=''):
     labels = []
@@ -264,6 +266,10 @@ def process(documents, entity_start_token_id, id2title, title2id, title2filename
                 end = tuple[2]
                 mention_upper = ' '.join(sentence[start:end])
 
+                context = ' '.join(sentence[:start]) + ' <e>' + ' '.join(sentence[start:end]) + '</e> ' + ' '.join(
+                    sentence[end:])
+                context = context.strip()
+
                 if id in id2title:
 
                     title = id2title[id]
@@ -273,9 +279,7 @@ def process(documents, entity_start_token_id, id2title, title2id, title2filename
 
                     mention = unidecode(' '.join(sentence[start:end]).lower())
 
-                    context = ' '.join(sentence[:start]) + ' <e>' + ' '.join(sentence[start:end]) + '</e> ' + ' '.join(
-                        sentence[end:])
-                    context = context.strip()
+
 
                     if len(sentence_before) + len(sentence) < MAX_SENT_LENGTH / 2:
                         sentence_before_str = ' '.join(sentence_before)
@@ -346,22 +350,31 @@ def process(documents, entity_start_token_id, id2title, title2id, title2filename
         inputs = tokenizer(contexts, abstracts, return_tensors='pt', max_length=MAX_SENT_LENGTH, truncation=True,
                            padding='max_length')
 
-        '''input_ids = inputs['input_ids']
+        input_ids = inputs['input_ids']
 
-        b = []
+        entity_mask_start = []
+        entity_mask_end = []
         for i in range(len(input_ids)):
             # for each mention
             entity_start_token = -1
+            entity_end_token = -1
             for j in range(len(input_ids[i])):
                 if input_ids[i][j] == entity_start_token_id:
                     entity_start_token = j
+                if input_ids[i][j] == entity_end_token_id:
+                    entity_end_token = j
                     break
 
             entity_mask = [False] * len(input_ids[i])
             entity_mask[entity_start_token] = True
-            b.append(entity_mask)
+            entity_mask_start.append(entity_mask)
 
-        inputs['entity_mask'] = torch.tensor(b, dtype=torch.bool)'''
+            entity_mask = [False] * len(input_ids[i])
+            entity_mask[entity_end_token] = True
+            entity_mask_end.append(entity_mask)
+
+        inputs['entity_mask_start'] = torch.tensor(entity_mask_start, dtype=torch.bool)
+        inputs['entity_mask_end'] = torch.tensor(entity_mask_end, dtype=torch.bool)
         inputs['labels'] = torch.LongTensor([labels]).T
         inputs['priors'] = torch.FloatTensor([adds_priors]).T
         inputs['redirects'] = torch.FloatTensor([adds_redirects]).T
@@ -378,7 +391,7 @@ def process(documents, entity_start_token_id, id2title, title2id, title2filename
 
 
 def get_dataset(wexea_directory, entity_start_token_id, tokenizer=None, type=''):
-    fname = "data/" + type + ".pickle"
+    fname = DATA_DIRECTORY + type + ".pickle"
     if os.path.isfile(fname):
         with open(fname, 'rb') as handle:
             dataset = pickle.load(handle)

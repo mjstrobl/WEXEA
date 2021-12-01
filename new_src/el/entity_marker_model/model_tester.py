@@ -1,22 +1,19 @@
-from candidate_tester import get_dataset
+from new_src.el.complex_model.candidate_tester import get_dataset
 import torch
-import copy
 import json
-import pickle
-import os.path
 from tqdm import tqdm
 import numpy as np
-from base_model import BertForEntityClassification
-from torch.utils.data import DataLoader, RandomSampler, SequentialSampler, TensorDataset
+from new_src.el.cls_model.model import BertForEntityClassification
+from torch.utils.data import DataLoader
 from transformers import (
-    AdamW, BertTokenizer, BertForNextSentencePrediction
+    BertTokenizer
 )
 
 import transformers
 transformers.logging.set_verbosity_error()
 
 
-config = json.load(open('../../config/config.json'))
+config = json.load(open('../../../config/config.json'))
 outputpath = config['outputpath']
 
 wexea_directory = outputpath

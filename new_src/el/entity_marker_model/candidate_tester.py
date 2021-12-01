@@ -2,23 +2,15 @@ import json
 import re
 from unidecode import unidecode
 import os.path
-import random
-import sqlite3
 import torch
 import pickle
-from tqdm import tqdm
-import numpy as np
-from model import BertForEntityClassification
-from transformers import (
-    AdamW, BertTokenizer, BertForNextSentencePrediction
-)
 
 RE_LINKS = re.compile(r'\[{2}(.*?)\]{2}', re.DOTALL | re.UNICODE)
 
 MAX_SENT_LENGTH = 128
-MAX_ABSTRACT_LENGTH = MAX_SENT_LENGTH / 4
+MAX_ABSTRACT_LENGTH = MAX_SENT_LENGTH / 2
 
-DATA_DIRECTORY = 'data/cls/'
+DATA_DIRECTORY = 'data/entity_marker/'
 
 MAX_NUM_CANDIDATES = 10
 
@@ -146,6 +138,7 @@ def create_candidate_set(candidates, title2id, type=''):
                         result[name][2] = max(redirect, result[name][2])
                         result[name][3] = max(surname, result[name][3])
                         result[name][4] = max(document_mention, result[name][4])
+
                     else:
                         result[name] = [name, prior, redirect, surname, document_mention]
 
@@ -235,6 +228,8 @@ def process(documents, entity_start_token_id, entity_end_token_id, id2title, tit
     adds_priors = []
     adds_redirects = []
     adds_surname = []
+    adds_document_mention = []
+    adds_perfect_match = []
 
     test_data = {"ids": [], "contexts": [], "candidates": []}
 
@@ -327,10 +322,16 @@ def process(documents, entity_start_token_id, entity_end_token_id, id2title, tit
                             prior = candidate[1]
                             redirect = candidate[2]
                             surname = candidate[3]
+                            is_document_mention = candidate[4]
 
                             adds_priors.append(prior)
                             adds_surname.append(surname)
                             adds_redirects.append(redirect)
+                            adds_document_mention.append(is_document_mention)
+                            if candidate[0] == mention_upper:
+                                adds_perfect_match.append(1)
+                            else:
+                                adds_perfect_match.append(0)
 
                             if candidate[0] == title:
                                 labels.append(1)
@@ -338,7 +339,7 @@ def process(documents, entity_start_token_id, entity_end_token_id, id2title, tit
                             else:
                                 labels.append(0)
                             counter[labels[-1]] += 1
-                            candidate_l.append((candidate[0], prior, redirect, surname, abstract))
+                            candidate_l.append((candidate[0], prior, redirect, surname, is_document_mention, adds_perfect_match[-1], abstract))
 
                         if found:
                             correct_found += 1
@@ -364,34 +365,7 @@ def process(documents, entity_start_token_id, entity_end_token_id, id2title, tit
         inputs = tokenizer(contexts, abstracts, return_tensors='pt', max_length=MAX_SENT_LENGTH, truncation=True,
                            padding='max_length')
 
-        inputs_context_entities = tokenizer(contexts, entity_lines, return_tensors='pt', max_length=MAX_SENT_LENGTH, truncation=True,
-                           padding='max_length')
-
-        inputs_mentions_entities = tokenizer(mention_lines, entity_lines, return_tensors='pt',
-                                             max_length=MAX_SENT_LENGTH, truncation=True,
-                                             padding='max_length')
-
-        inputs_mentions_abstracts = tokenizer(mention_lines, entity_lines, return_tensors='pt',
-                                             max_length=MAX_SENT_LENGTH, truncation=True,
-                                             padding='max_length')
-
-
-        inputs["context_entities_input_ids"] = inputs_context_entities['input_ids']
-        inputs["context_entities_attention_mask"] = inputs_context_entities['attention_mask']
-        inputs["context_entities_token_type_ids"] = inputs_context_entities['token_type_ids']
-
-        inputs["mentions_entities_input_ids"] = inputs_mentions_entities['input_ids']
-        inputs["mentions_entities_attention_mask"] = inputs_mentions_entities['attention_mask']
-        inputs["mentions_entities_token_type_ids"] = inputs_mentions_entities['token_type_ids']
-
-        inputs["mentions_abstracts_input_ids"] = inputs_mentions_abstracts['input_ids']
-        inputs["mentions_abstracts_attention_mask"] = inputs_mentions_abstracts['attention_mask']
-        inputs["mentions_abstracts_token_type_ids"] = inputs_mentions_abstracts['token_type_ids']
-
-
-
-
-        input_ids = inputs['input_ids']
+        input_ids = inputs["input_ids"]
 
         entity_mask_start = []
         entity_mask_end = []
@@ -420,6 +394,9 @@ def process(documents, entity_start_token_id, entity_end_token_id, id2title, tit
         inputs['priors'] = torch.FloatTensor([adds_priors]).T
         inputs['redirects'] = torch.FloatTensor([adds_redirects]).T
         inputs['surnames'] = torch.FloatTensor([adds_surname]).T
+        inputs['document_mention'] = torch.FloatTensor([adds_document_mention]).T
+        inputs['perfect_match'] = torch.FloatTensor([adds_perfect_match]).T
+
         dataset = OurDataset(inputs)
 
     print(counter)
@@ -488,30 +465,9 @@ def get_dataset(wexea_directory, entity_start_token_id, entity_end_token_id, tok
                                          entity_title2filename,
                                          redirects, person_candidates, priors_lower, tokenizer=tokenizer, type=type)
 
-            if tokenizer != None:
-                with open(fname, 'wb') as handle:
-                    pickle.dump(dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
-                    pickle.dump(test_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            with open(fname, 'wb') as handle:
+                pickle.dump(dataset, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                pickle.dump(test_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
             print("recreating file.")
             return dataset, test_data
-
-
-def main():
-    config = json.load(open('../../config/config.json'))
-    outputpath = config['outputpath']
-
-    wexea_directory = outputpath
-
-    dataset_dev, test_data_dev = get_dataset(wexea_directory, 0, 0 , type='dev')
-    dataset_test, test_data_test = get_dataset(wexea_directory, 0, 0, type='test')
-    dataset_train, test_data_train = get_dataset(wexea_directory, 0, 0, type='train')
-
-
-if __name__ == "__main__":
-    main()
-
-
-
-
-

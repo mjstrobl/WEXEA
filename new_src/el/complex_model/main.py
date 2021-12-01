@@ -1,22 +1,20 @@
 from candidate_tester import get_dataset
 import torch
-import copy
 import json
-import pickle
 import os.path
 from tqdm import tqdm
 import numpy as np
-from model import BertForEntityClassification
-from torch.utils.data import DataLoader, RandomSampler, SequentialSampler, TensorDataset
+from new_src.el.complex_model.model import BertForEntityClassification
+from torch.utils.data import DataLoader
 from transformers import (
-    AdamW, BertTokenizer, BertForNextSentencePrediction
+    AdamW, BertTokenizer
 )
 
 import transformers
 transformers.logging.set_verbosity_error()
 
 
-config = json.load(open('../../config/config.json'))
+config = json.load(open('../../../config/config.json'))
 outputpath = config['outputpath']
 
 wexea_directory = outputpath
@@ -328,7 +326,7 @@ for epoch in range(EPOCHS):
         loop.set_description(f'Epoch {epoch}')
         loop.set_postfix(loss=loss_acc / batches)
 
-    output_dir = os.path.join('models/', "checkpoint-{}".format(global_step))
+    output_dir = os.path.join('../models/', "checkpoint-{}".format(global_step))
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     model_to_save = (

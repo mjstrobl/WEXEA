@@ -24,8 +24,7 @@ class BertForEntityClassification(BertPreTrainedModel):
         self.bert = BertModel(config)
 
         classifier_dropout = config.hidden_dropout_prob
-        print("dropout")
-        print(classifier_dropout)
+
         self.dropout = nn.Dropout(classifier_dropout)
         self.classifier = nn.Linear(config.hidden_size+3, config.num_labels)
 
@@ -38,8 +37,6 @@ class BertForEntityClassification(BertPreTrainedModel):
             self,
             input_ids=None,
             attention_mask=None,
-            entity_mask_start=None,
-            entity_mask_end=None,
             adds_prior=None,
             adds_redirect=None,
             adds_surname=None,
@@ -72,20 +69,7 @@ class BertForEntityClassification(BertPreTrainedModel):
             return_dict=return_dict,
         )
 
-        #last_hidden_state = outputs[1]
-        #pooled_output = torch.cat([last_hidden_state, adds_prior, adds_redirect, adds_surname], dim=1)
-        #pooled_output = self.dropout(result)
-        #logits = self.classifier(pooled_output)
-
-        #entity_hidden_state_1 = torch.mul(outputs.last_hidden_state,entity_mask)
-
         pooled_output = outputs[1]
-        #entity_start_state = outputs.last_hidden_state[entity_mask_start,:]
-        #entity_end_state = outputs.last_hidden_state[entity_mask_end, :]
-        #entity_hidden_state_1 = torch.masked_select(outputs.last_hidden_state, entity_mask)
-        #entity_hidden_state_2 = torch.sum(entity_hidden_state_1,dim=1)
-
-
         pooled_output = torch.cat([pooled_output, adds_prior, adds_redirect, adds_surname], dim=1)
         logits = self.classifier(pooled_output)
 

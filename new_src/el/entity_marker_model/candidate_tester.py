@@ -10,7 +10,7 @@ RE_LINKS = re.compile(r'\[{2}(.*?)\]{2}', re.DOTALL | re.UNICODE)
 MAX_SENT_LENGTH = 128
 MAX_ABSTRACT_LENGTH = MAX_SENT_LENGTH / 2
 
-DATA_DIRECTORY = 'data/entity_marker/'
+DATA_DIRECTORY = '../data/entity_marker/'
 
 MAX_NUM_CANDIDATES = 10
 
@@ -428,7 +428,7 @@ def get_dataset(wexea_directory, entity_start_token_id, entity_end_token_id, tok
         priors_lower = json.load(open(wexea_directory + 'dictionaries/priors_lower.json'))
 
         print("get: " + type)
-        filename = '../../data/' + type + ".txt"
+        filename = '../../../data/' + type + ".txt"
         documents = []
         with open(filename) as f:
             current_sentence = []

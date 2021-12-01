@@ -4,7 +4,7 @@ import json
 import os.path
 from tqdm import tqdm
 import numpy as np
-from new_src.el.entity_marker_model.model import BertForEntityClassification
+from model import BertForEntityClassification
 from torch.utils.data import DataLoader
 from transformers import (
     AdamW, BertTokenizer
@@ -19,7 +19,7 @@ outputpath = config['outputpath']
 
 wexea_directory = outputpath
 
-
+MODEL_PATH = "models/entity_markers/"
 
 class OurDataset(torch.utils.data.Dataset):
     def __init__(self, encodings):
@@ -276,7 +276,7 @@ for epoch in range(EPOCHS):
         loop.set_description(f'Epoch {epoch}')
         loop.set_postfix(loss=loss_acc / batches)
 
-    output_dir = os.path.join('models/', "checkpoint-{}".format(global_step))
+    output_dir = os.path.join(MODEL_PATH, "checkpoint-{}".format(global_step))
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     model_to_save = (

@@ -10,7 +10,7 @@ RE_LINKS = re.compile(r'\[{2}(.*?)\]{2}', re.DOTALL | re.UNICODE)
 MAX_SENT_LENGTH = 128
 MAX_ABSTRACT_LENGTH = MAX_SENT_LENGTH / 4
 
-DATA_DIRECTORY = 'data/cls/'
+DATA_DIRECTORY = '../data/complex/'
 
 MAX_NUM_CANDIDATES = 10
 
@@ -227,6 +227,8 @@ def process(documents, entity_start_token_id, entity_end_token_id, id2title, tit
     adds_priors = []
     adds_redirects = []
     adds_surname = []
+    adds_document_mention = []
+    adds_perfect_match = []
 
     test_data = {"ids": [], "contexts": [], "candidates": []}
 
@@ -319,10 +321,17 @@ def process(documents, entity_start_token_id, entity_end_token_id, id2title, tit
                             prior = candidate[1]
                             redirect = candidate[2]
                             surname = candidate[3]
+                            is_document_mention = candidate[4]
 
                             adds_priors.append(prior)
                             adds_surname.append(surname)
                             adds_redirects.append(redirect)
+                            adds_document_mention.append(is_document_mention)
+
+                            if candidate[0] == mention_upper:
+                                adds_perfect_match.append(1)
+                            else:
+                                adds_perfect_match.append(0)
 
                             if candidate[0] == title:
                                 labels.append(1)
@@ -330,7 +339,7 @@ def process(documents, entity_start_token_id, entity_end_token_id, id2title, tit
                             else:
                                 labels.append(0)
                             counter[labels[-1]] += 1
-                            candidate_l.append((candidate[0], prior, redirect, surname, abstract))
+                            candidate_l.append((candidate[0], prior, redirect, surname, is_document_mention, adds_perfect_match[-1], abstract))
 
                         if found:
                             correct_found += 1
@@ -443,7 +452,7 @@ def get_dataset(wexea_directory, entity_start_token_id, entity_end_token_id, tok
         priors_lower = json.load(open(wexea_directory + 'dictionaries/priors_lower.json'))
 
         print("get: " + type)
-        filename = '../../data/' + type + ".txt"
+        filename = '../../../data/' + type + ".txt"
         documents = []
         with open(filename) as f:
             current_sentence = []

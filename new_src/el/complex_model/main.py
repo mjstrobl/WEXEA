@@ -4,7 +4,7 @@ import json
 import os.path
 from tqdm import tqdm
 import numpy as np
-from new_src.el.complex_model.model import BertForEntityClassification
+from model import BertForEntityClassification
 from torch.utils.data import DataLoader
 from transformers import (
     AdamW, BertTokenizer
@@ -19,7 +19,7 @@ outputpath = config['outputpath']
 
 wexea_directory = outputpath
 
-
+MODEL_PATH = "../models/complex/"
 
 class OurDataset(torch.utils.data.Dataset):
     def __init__(self, encodings):
@@ -159,10 +159,11 @@ def evaluate(loader):
         attention_mask = batch['attention_mask'].to(device)
         entity_mask_start = batch['entity_mask_start'].to(device)
         entity_mask_end = batch['entity_mask_end'].to(device)
-        #entity_mask = None
         adds_redirect = batch['redirects'].to(device)
         adds_prior = batch['priors'].to(device)
         adds_surname = batch['surnames'].to(device)
+        adds_document_mention = batch['document_mention'].to(device)
+        adds_perfect_match = batch['perfect_match'].to(device)
         labels = batch['labels'].to(device)
 
         context_entities_input_ids = batch['context_entities_input_ids'].to(device)
@@ -191,6 +192,8 @@ def evaluate(loader):
                             mentions_abstracts_token_type_ids=mentions_abstracts_token_type_ids,
                             adds_redirect=adds_redirect,
                             adds_surname=adds_surname,
+                            adds_document_mention=adds_document_mention,
+                            adds_perfect_match=adds_perfect_match,
                             token_type_ids=token_type_ids, adds_prior=adds_prior,
                             labels=labels)
 
@@ -280,6 +283,8 @@ for epoch in range(EPOCHS):
         adds_redirect = batch['redirects'].to(device)
         adds_prior = batch['priors'].to(device)
         adds_surname = batch['surnames'].to(device)
+        adds_document_mention = batch['document_mention'].to(device)
+        adds_perfect_match = batch['perfect_match'].to(device)
         labels = batch['labels'].to(device)
 
         context_entities_input_ids = batch['context_entities_input_ids'].to(device)
@@ -310,6 +315,8 @@ for epoch in range(EPOCHS):
                         mentions_abstracts_token_type_ids=mentions_abstracts_token_type_ids,
                         adds_redirect=adds_redirect,
                         adds_surname=adds_surname,
+                        adds_document_mention=adds_document_mention,
+                        adds_perfect_match=adds_perfect_match,
                         token_type_ids=token_type_ids,
                         adds_prior=adds_prior,
                         labels=labels)
@@ -326,7 +333,7 @@ for epoch in range(EPOCHS):
         loop.set_description(f'Epoch {epoch}')
         loop.set_postfix(loss=loss_acc / batches)
 
-    output_dir = os.path.join('../models/', "checkpoint-{}".format(global_step))
+    output_dir = os.path.join(MODEL_PATH, "checkpoint-{}".format(global_step))
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     model_to_save = (

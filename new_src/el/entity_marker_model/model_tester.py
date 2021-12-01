@@ -1,9 +1,9 @@
-from new_src.el.complex_model.candidate_tester import get_dataset
+from candidate_tester import get_dataset
 import torch
 import json
 from tqdm import tqdm
 import numpy as np
-from new_src.el.cls_model.model import BertForEntityClassification
+from model import BertForEntityClassification
 from torch.utils.data import DataLoader
 from transformers import (
     BertTokenizer
@@ -73,18 +73,21 @@ def evaluate(model, loader):
         input_ids = batch['input_ids'].to(device)
         token_type_ids = batch['token_type_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
-        #entity_mask = batch['entity_mask'].to(device)
-        entity_mask = None
+        entity_mask_start = batch['entity_mask_start'].to(device)
+        entity_mask_end = batch['entity_mask_end'].to(device)
         adds_redirect = batch['redirects'].to(device)
         adds_prior = batch['priors'].to(device)
         adds_surname = batch['surnames'].to(device)
+        adds_perfect_match = batch['perfect_match'].to(device)
+        adds_document_mention = batch['document_mention'].to(device)
         labels = batch['labels'].to(device)
 
 
 
         with torch.no_grad():
-            outputs = model(input_ids, attention_mask=attention_mask, adds_redirect=adds_redirect,
-                            adds_surname=adds_surname,
+            outputs = model(input_ids, attention_mask=attention_mask, entity_mask_start=entity_mask_start, entity_mask_end=entity_mask_end,
+                            adds_redirect=adds_redirect,
+                            adds_surname=adds_surname,adds_document_mention=adds_document_mention,adds_perfect_match=adds_perfect_match,
                             token_type_ids=token_type_ids, adds_prior=adds_prior,
                             labels=labels)
 
@@ -116,7 +119,7 @@ loader_dev = torch.utils.data.DataLoader(dataset_dev, batch_size=16, shuffle=Fal
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-checkpoint = 'models/model_base_cls/checkpoint-13079/'
+checkpoint = '../models/entity_markers/checkpoint-13079/'
 model = BertForEntityClassification.from_pretrained(checkpoint)
 model.to(device)
 

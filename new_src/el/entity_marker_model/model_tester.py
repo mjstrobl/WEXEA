@@ -166,8 +166,8 @@ for i in range(data_length):
 
             candidate = candidates[j][0]
 
-            f_x = np.exp(preds_dev[preds_idx]) / np.sum(np.exp(preds_dev[preds_idx]))
-            prediction = f_x[1]
+            #f_x = np.exp(preds_dev[preds_idx]) / np.sum(np.exp(preds_dev[preds_idx]))
+            prediction = preds_dev[preds_idx][1]
             if prediction > best_candidate_pred:
                 best_candidate_pred = prediction
                 best_candidate = candidate

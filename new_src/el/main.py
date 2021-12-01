@@ -34,7 +34,7 @@ class OurDataset(torch.utils.data.Dataset):
         return len(self.encodings.input_ids)
 
 
-MAX_SENT_LENGTH = 128
+MAX_SENT_LENGTH = 256
 EPOCHS = 10
 MODEL_NAME = 'bert-base-cased'
 
@@ -167,10 +167,31 @@ def evaluate(loader):
         adds_surname = batch['surnames'].to(device)
         labels = batch['labels'].to(device)
 
+        context_entities_input_ids = batch['context_entities_input_ids'].to(device)
+        context_entities_attention_mask = batch['context_entities_attention_mask'].to(device)
+        context_entities_token_type_ids = batch['context_entities_token_type_ids'].to(device)
+
+        mentions_entities_input_ids = batch['mentions_entities_input_ids'].to(device)
+        mentions_entities_attention_mask = batch['mentions_entities_attention_mask'].to(device)
+        mentions_entities_token_type_ids = batch['mentions_entities_token_type_ids'].to(device)
+
+        mentions_abstracts_input_ids = batch['mentions_abstracts_input_ids'].to(device)
+        mentions_abstracts_attention_mask = batch['mentions_abstracts_attention_mask'].to(device)
+        mentions_abstracts_token_type_ids = batch['mentions_abstracts_token_type_ids'].to(device)
 
 
         with torch.no_grad():
-            outputs = model(input_ids, attention_mask=attention_mask, entity_mask_start=entity_mask_start, entity_mask_end=entity_mask_end, adds_redirect=adds_redirect,
+            outputs = model(input_ids, attention_mask=attention_mask, entity_mask_start=entity_mask_start, entity_mask_end=entity_mask_end,
+                            context_entities_input_ids=context_entities_input_ids,
+                            context_entities_attention_mask=context_entities_attention_mask,
+                            context_entities_token_type_ids=context_entities_token_type_ids,
+                            mentions_entities_input_ids=mentions_entities_input_ids,
+                            mentions_entities_attention_mask=mentions_entities_attention_mask,
+                            mentions_entities_token_type_ids=mentions_entities_token_type_ids,
+                            mentions_abstracts_input_ids=mentions_abstracts_input_ids,
+                            mentions_abstracts_attention_mask=mentions_abstracts_attention_mask,
+                            mentions_abstracts_token_type_ids=mentions_abstracts_token_type_ids,
+                            adds_redirect=adds_redirect,
                             adds_surname=adds_surname,
                             token_type_ids=token_type_ids, adds_prior=adds_prior,
                             labels=labels)
@@ -263,8 +284,36 @@ for epoch in range(EPOCHS):
         adds_surname = batch['surnames'].to(device)
         labels = batch['labels'].to(device)
 
-        outputs = model(input_ids, attention_mask=attention_mask, entity_mask_start=entity_mask_start, entity_mask_end=entity_mask_end, adds_redirect=adds_redirect, adds_surname=adds_surname,
-                        token_type_ids=token_type_ids, adds_prior=adds_prior,
+        context_entities_input_ids = batch['context_entities_input_ids'].to(device)
+        context_entities_attention_mask = batch['context_entities_attention_mask'].to(device)
+        context_entities_token_type_ids = batch['context_entities_token_type_ids'].to(device)
+
+        mentions_entities_input_ids = batch['mentions_entities_input_ids'].to(device)
+        mentions_entities_attention_mask = batch['mentions_entities_attention_mask'].to(device)
+        mentions_entities_token_type_ids = batch['mentions_entities_token_type_ids'].to(device)
+
+        mentions_abstracts_input_ids = batch['mentions_abstracts_input_ids'].to(device)
+        mentions_abstracts_attention_mask = batch['mentions_abstracts_attention_mask'].to(device)
+        mentions_abstracts_token_type_ids = batch['mentions_abstracts_token_type_ids'].to(device)
+
+
+        outputs = model(input_ids,
+                        attention_mask=attention_mask,
+                        entity_mask_start=entity_mask_start,
+                        entity_mask_end=entity_mask_end,
+                        context_entities_input_ids=context_entities_input_ids,
+                        context_entities_attention_mask=context_entities_attention_mask,
+                        context_entities_token_type_ids=context_entities_token_type_ids,
+                        mentions_entities_input_ids=mentions_entities_input_ids,
+                        mentions_entities_attention_mask=mentions_entities_attention_mask,
+                        mentions_entities_token_type_ids=mentions_entities_token_type_ids,
+                        mentions_abstracts_input_ids=mentions_abstracts_input_ids,
+                        mentions_abstracts_attention_mask=mentions_abstracts_attention_mask,
+                        mentions_abstracts_token_type_ids=mentions_abstracts_token_type_ids,
+                        adds_redirect=adds_redirect,
+                        adds_surname=adds_surname,
+                        token_type_ids=token_type_ids,
+                        adds_prior=adds_prior,
                         labels=labels)
         # extract loss
         loss = outputs.loss

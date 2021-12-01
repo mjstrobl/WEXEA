@@ -18,7 +18,7 @@ RE_LINKS = re.compile(r'\[{2}(.*?)\]{2}', re.DOTALL | re.UNICODE)
 MAX_SENT_LENGTH = 128
 MAX_ABSTRACT_LENGTH = MAX_SENT_LENGTH / 4
 
-DATA_DIRECTORY = 'data/start_token/'
+DATA_DIRECTORY = 'data/start_token_and_all/'
 
 MAX_NUM_CANDIDATES = 10
 
@@ -37,8 +37,8 @@ class OurDataset(torch.utils.data.Dataset):
 
 
 def get_abstract(title, title2filename, entity_title2filename):
-    if title in ABSTRACTS:
-        return ABSTRACTS[title]
+    #if title in ABSTRACTS:
+    #    return ABSTRACTS[title]
     try:
         with open(title2filename[title].replace("articles_2", "articles_3")) as f:
             for line in f:
@@ -58,21 +58,18 @@ def get_abstract(title, title2filename, entity_title2filename):
                         else:
                             break
 
+                    entity_line = ''
                     if title in entity_title2filename:
                         with open(entity_title2filename[title]) as fe:
                             entities = fe.read()
+                        entity_line = entities
 
-                        abstract_parts = line.split(' ')
-                        end = int(min(MAX_ABSTRACT_LENGTH, len(abstract_parts)))
-                        line = ' '.join(abstract_parts[:end])
-                        line += ' ' + entities
-
-                    ABSTRACTS[title] = line
-                    return line
+                    #ABSTRACTS[title] = (line, entity_line)
+                    return line, entity_line
 
     except:
         pass
-    return ""
+    return "",''
 
 
 def create_mention_strings(mention):
@@ -232,6 +229,8 @@ def process(documents, entity_start_token_id, entity_end_token_id, id2title, tit
     labels = []
     contexts = []
     abstracts = []
+    entity_lines = []
+    mention_lines = []
 
     adds_priors = []
     adds_redirects = []
@@ -258,6 +257,17 @@ def process(documents, entity_start_token_id, entity_end_token_id, id2title, tit
                 sentence_after = document[i + 1][0]
             sentence = tuple[0]
             mentions = tuple[1]
+
+            all_mentions = []
+
+            for tuple in mentions:
+                start = tuple[0]
+                end = tuple[2]
+                mention_upper = ' '.join(sentence[start:end])
+                all_mentions.append(mention_upper)
+
+            all_mention_line = ' '.join(all_mentions)
+
             for tuple in mentions:
                 all += 1
                 start = tuple[0]
@@ -305,11 +315,15 @@ def process(documents, entity_start_token_id, entity_end_token_id, id2title, tit
                         for j in range(len(candidates)):
                             candidate = candidates[j]
                             if tokenizer != None:
-                                abstract = get_abstract(candidate[0], title2filename, entity_title2filename)
+                                abstract, entity_line = get_abstract(candidate[0], title2filename, entity_title2filename)
                             else:
                                 abstract = ''
+                                entity_line = ''
                             contexts.append(context)
                             abstracts.append(abstract)
+                            entity_lines.append(entity_line)
+                            mention_lines.append(all_mention_line)
+
                             prior = candidate[1]
                             redirect = candidate[2]
                             surname = candidate[3]
@@ -349,6 +363,33 @@ def process(documents, entity_start_token_id, entity_end_token_id, id2title, tit
     if tokenizer != None:
         inputs = tokenizer(contexts, abstracts, return_tensors='pt', max_length=MAX_SENT_LENGTH, truncation=True,
                            padding='max_length')
+
+        inputs_context_entities = tokenizer(contexts, entity_lines, return_tensors='pt', max_length=MAX_SENT_LENGTH, truncation=True,
+                           padding='max_length')
+
+        inputs_mentions_entities = tokenizer(mention_lines, entity_lines, return_tensors='pt',
+                                             max_length=MAX_SENT_LENGTH, truncation=True,
+                                             padding='max_length')
+
+        inputs_mentions_abstracts = tokenizer(mention_lines, entity_lines, return_tensors='pt',
+                                             max_length=MAX_SENT_LENGTH, truncation=True,
+                                             padding='max_length')
+
+
+        inputs["context_entities_input_ids"] = inputs_context_entities['input_ids']
+        inputs["context_entities_attention_mask"] = inputs_context_entities['attention_mask']
+        inputs["context_entities_token_type_ids"] = inputs_context_entities['token_type_ids']
+
+        inputs["mentions_entities_input_ids"] = inputs_mentions_entities['input_ids']
+        inputs["mentions_entities_attention_mask"] = inputs_mentions_entities['attention_mask']
+        inputs["mentions_entities_token_type_ids"] = inputs_mentions_entities['token_type_ids']
+
+        inputs["mentions_abstracts_input_ids"] = inputs_mentions_abstracts['input_ids']
+        inputs["mentions_abstracts_attention_mask"] = inputs_mentions_abstracts['attention_mask']
+        inputs["mentions_abstracts_token_type_ids"] = inputs_mentions_abstracts['token_type_ids']
+
+
+
 
         input_ids = inputs['input_ids']
 

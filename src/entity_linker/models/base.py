@@ -101,7 +101,7 @@ class Model(object):
 
 
 
-    def collect_scope(self, scope_name, graph=None, var_type=tf.GraphKeys.VARIABLES):
+    '''def collect_scope(self, scope_name, graph=None, var_type=tf.GraphKeys.VARIABLES):
         if graph == None:
             graph = tf.get_default_graph()
 
@@ -110,7 +110,7 @@ class Model(object):
         assert_str = "No variable exists with name_scope '{}'".format(scope_name)
         assert len(var_list) != 0, assert_str
 
-        return var_list
+        return var_list'''
 
     def get_scope_var_name_set(self, var_name):
         clean_var_num = var_name.split(":")[0]

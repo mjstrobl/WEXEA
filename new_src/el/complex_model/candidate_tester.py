@@ -421,6 +421,8 @@ def process(documents, entity_start_token_id, entity_end_token_id, id2title, tit
         inputs['priors'] = torch.FloatTensor([adds_priors]).T
         inputs['redirects'] = torch.FloatTensor([adds_redirects]).T
         inputs['surnames'] = torch.FloatTensor([adds_surname]).T
+        inputs['document_mention'] = torch.FloatTensor([adds_document_mention]).T
+        inputs['perfect_match'] = torch.FloatTensor([adds_perfect_match]).T
         dataset = OurDataset(inputs)
 
     print(counter)

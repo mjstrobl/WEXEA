@@ -228,9 +228,9 @@ def evaluate(loader):
 
 
 
-dataset_dev,test_data_dev = get_dataset(wexea_directory,entity_start_token_id, entity_end_token_id,tokenizer=tokenizer, type='dev')
-dataset_test, test_data_test = get_dataset(wexea_directory,entity_start_token_id, entity_end_token_id,tokenizer=tokenizer, type='test')
-dataset_train,test_data_train = get_dataset(wexea_directory,entity_start_token_id, entity_end_token_id,tokenizer=tokenizer, type='train')
+dataset_dev,test_data_dev = get_dataset(wexea_directory,entity_start_token_id, entity_end_token_id,tokenizer=tokenizer, type='aida_dev')
+dataset_test, test_data_test = get_dataset(wexea_directory,entity_start_token_id, entity_end_token_id,tokenizer=tokenizer, type='aida_test')
+dataset_train,test_data_train = get_dataset(wexea_directory,entity_start_token_id, entity_end_token_id,tokenizer=tokenizer, type='aida_train')
 
 '''dataset_train = dataset_dev
 dataset_test = dataset_dev

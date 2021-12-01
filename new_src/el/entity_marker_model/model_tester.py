@@ -158,7 +158,7 @@ for i in range(data_length):
             one_candidate['incorrect'] += 1
         preds_idx += 1
     else:
-        best_candidate_pred = 0.0
+        best_candidate_pred = -100000.0
         best_candidate = None
         results = []
         for j in range(len(candidates)):

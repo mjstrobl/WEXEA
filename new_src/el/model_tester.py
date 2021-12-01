@@ -6,7 +6,7 @@ import pickle
 import os.path
 from tqdm import tqdm
 import numpy as np
-from model import BertForEntityClassification
+from base_model import BertForEntityClassification
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler, TensorDataset
 from transformers import (
     AdamW, BertTokenizer, BertForNextSentencePrediction
@@ -86,7 +86,7 @@ def evaluate(model, loader):
 
 
         with torch.no_grad():
-            outputs = model(input_ids, attention_mask=attention_mask, entity_mask=entity_mask, adds_redirect=adds_redirect,
+            outputs = model(input_ids, attention_mask=attention_mask, adds_redirect=adds_redirect,
                             adds_surname=adds_surname,
                             token_type_ids=token_type_ids, adds_prior=adds_prior,
                             labels=labels)
@@ -113,13 +113,13 @@ def evaluate(model, loader):
 
     return preds
 
-
-dataset_dev,test_data_dev = get_dataset(wexea_directory,0,tokenizer=None, type='dev')
+tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+dataset_dev,test_data_dev = get_dataset(wexea_directory,0, 0,tokenizer=tokenizer, type='msnbc')
 loader_dev = torch.utils.data.DataLoader(dataset_dev, batch_size=16, shuffle=False)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-checkpoint = 'models/checkpoint-13079/'
+checkpoint = 'models/model_base_cls/checkpoint-13079/'
 model = BertForEntityClassification.from_pretrained(checkpoint)
 model.to(device)
 

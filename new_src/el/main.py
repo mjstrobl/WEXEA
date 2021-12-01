@@ -42,6 +42,7 @@ tokenizer = BertTokenizer.from_pretrained(MODEL_NAME)
 num_added_toks = tokenizer.add_tokens(["<e>", "</e>"])
 added_tokens = tokenizer.get_added_vocab()
 entity_start_token_id = added_tokens['<e>']
+entity_end_token_id = added_tokens['</e>']
 print('We have added', num_added_toks, 'tokens')
 model = BertForEntityClassification.from_pretrained(MODEL_NAME)
 model.resize_token_embeddings(len(tokenizer))
@@ -205,9 +206,9 @@ def evaluate(loader):
 
 
 
-dataset_dev,test_data_dev = get_dataset(wexea_directory,entity_start_token_id,tokenizer=tokenizer, type='dev')
-dataset_test, test_data_test = get_dataset(wexea_directory,entity_start_token_id,tokenizer=tokenizer, type='test')
-dataset_train,test_data_train = get_dataset(wexea_directory,entity_start_token_id,tokenizer=tokenizer, type='train')
+dataset_dev,test_data_dev = get_dataset(wexea_directory,entity_start_token_id, entity_end_token_id,tokenizer=tokenizer, type='dev')
+dataset_test, test_data_test = get_dataset(wexea_directory,entity_start_token_id, entity_end_token_id,tokenizer=tokenizer, type='test')
+dataset_train,test_data_train = get_dataset(wexea_directory,entity_start_token_id, entity_end_token_id,tokenizer=tokenizer, type='train')
 
 '''dataset_train = dataset_dev
 dataset_test = dataset_dev

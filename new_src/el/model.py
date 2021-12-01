@@ -72,18 +72,9 @@ class BertForEntityClassification(BertPreTrainedModel):
             return_dict=return_dict,
         )
 
-        #last_hidden_state = outputs[1]
-        #pooled_output = torch.cat([last_hidden_state, adds_prior, adds_redirect, adds_surname], dim=1)
-        #pooled_output = self.dropout(result)
-        #logits = self.classifier(pooled_output)
-
-        #entity_hidden_state_1 = torch.mul(outputs.last_hidden_state,entity_mask)
-
         #entity_hidden_state_1 = outputs[1]
         entity_start_state = outputs.last_hidden_state[entity_mask_start,:]
         entity_end_state = outputs.last_hidden_state[entity_mask_end, :]
-        #entity_hidden_state_1 = torch.masked_select(outputs.last_hidden_state, entity_mask)
-        #entity_hidden_state_2 = torch.sum(entity_hidden_state_1,dim=1)
 
         pooled_output = torch.cat([entity_start_state, entity_end_state], dim=1)
         pooled_output = self.dropout(pooled_output)

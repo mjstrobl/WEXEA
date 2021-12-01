@@ -390,7 +390,7 @@ def process(documents, entity_start_token_id, entity_end_token_id, id2title, tit
     return dataset, test_data
 
 
-def get_dataset(wexea_directory, entity_start_token_id, tokenizer=None, type=''):
+def get_dataset(wexea_directory, entity_start_token_id, entity_end_token_id, tokenizer=None, type=''):
     fname = DATA_DIRECTORY + type + ".pickle"
     if os.path.isfile(fname):
         with open(fname, 'rb') as handle:
@@ -443,7 +443,7 @@ def get_dataset(wexea_directory, entity_start_token_id, tokenizer=None, type='')
 
             #documents = documents[:10]
 
-            dataset, test_data = process(documents, entity_start_token_id, id2title, title2id, title2filename,
+            dataset, test_data = process(documents, entity_start_token_id, entity_end_token_id, id2title, title2id, title2filename,
                                          entity_title2filename,
                                          redirects, person_candidates, priors_lower, tokenizer=tokenizer, type=type)
 
@@ -462,9 +462,9 @@ def main():
 
     wexea_directory = outputpath
 
-    dataset_dev, test_data_dev = get_dataset(wexea_directory, 0 , type='dev')
-    dataset_test, test_data_test = get_dataset(wexea_directory, 0, type='test')
-    dataset_train, test_data_train = get_dataset(wexea_directory, 0, type='train')
+    dataset_dev, test_data_dev = get_dataset(wexea_directory, 0, 0 , type='dev')
+    dataset_test, test_data_test = get_dataset(wexea_directory, 0, 0, type='test')
+    dataset_train, test_data_train = get_dataset(wexea_directory, 0, 0, type='train')
 
 
 if __name__ == "__main__":

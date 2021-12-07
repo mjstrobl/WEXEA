@@ -1,3 +1,4 @@
 unidecode
 gender-guesser
 yattag
+protobuf==3.6.0

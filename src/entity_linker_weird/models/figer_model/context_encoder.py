@@ -2,9 +2,12 @@
 Modifications copyright (C) 2020 Michael Strobl
 """
 
+import time
 import tensorflow as tf
+import numpy as np
 
-from src.entity_linker.models.base import Model
+from entity_linker.models.base import Model
+
 class ContextEncoderModel(Model):
     """Run Forward and Backward LSTM and concatenate last outputs to get
        context representation"""
@@ -25,35 +28,35 @@ class ContextEncoderModel(Model):
         self.left_context_embeddings = left_embed_batch
         self.right_context_embeddings = right_embed_batch
 
-        with tf.compat.v1.variable_scope(scope_name) as sc, tf.device(device) as d:
-            with tf.compat.v1.variable_scope("left_encoder") as s:
-                l_encoder_cell = tf.compat.v1.nn.rnn_cell.BasicLSTMCell(
+        with tf.variable_scope(scope_name) as sc, tf.device(device) as d:
+            with tf.variable_scope("left_encoder") as s:
+                l_encoder_cell = tf.nn.rnn_cell.BasicLSTMCell(
                     self.lstm_size, state_is_tuple=True)
 
-                l_dropout_cell = tf.compat.v1.nn.rnn_cell.DropoutWrapper(
+                l_dropout_cell = tf.nn.rnn_cell.DropoutWrapper(
                   cell=l_encoder_cell,
                   input_keep_prob=self.dropout_keep_prob,
                   output_keep_prob=self.dropout_keep_prob)
 
-                self.left_encoder = tf.compat.v1.nn.rnn_cell.MultiRNNCell(
+                self.left_encoder = tf.nn.rnn_cell.MultiRNNCell(
                   [l_dropout_cell] * self.num_lstm_layers, state_is_tuple=True)
-                self.left_outputs, self.left_states = tf.compat.v1.nn.dynamic_rnn(
+                self.left_outputs, self.left_states = tf.nn.dynamic_rnn(
                   cell=self.left_encoder, inputs=self.left_context_embeddings,
                   sequence_length=left_lengths, dtype=tf.float32)
 
-            with tf.compat.v1.variable_scope("right_encoder") as s:
-                r_encoder_cell = tf.compat.v1.nn.rnn_cell.BasicLSTMCell(
+            with tf.variable_scope("right_encoder") as s:
+                r_encoder_cell = tf.nn.rnn_cell.BasicLSTMCell(
                     self.lstm_size, state_is_tuple=True)
 
-                r_dropout_cell = tf.compat.v1.nn.rnn_cell.DropoutWrapper(
+                r_dropout_cell = tf.nn.rnn_cell.DropoutWrapper(
                   cell=r_encoder_cell,
                   input_keep_prob=self.dropout_keep_prob,
                   output_keep_prob=self.dropout_keep_prob)
 
-                self.right_encoder = tf.compat.v1.nn.rnn_cell.MultiRNNCell(
+                self.right_encoder = tf.nn.rnn_cell.MultiRNNCell(
                   [r_dropout_cell] * self.num_lstm_layers, state_is_tuple=True)
 
-                self.right_outputs, self.right_states = tf.compat.v1.nn.dynamic_rnn(
+                self.right_outputs, self.right_states = tf.nn.dynamic_rnn(
                   cell=self.right_encoder,
                   inputs=self.right_context_embeddings,
                   sequence_length=right_lengths, dtype=tf.float32)
@@ -75,7 +78,7 @@ class ContextEncoderModel(Model):
 
             # Linear Transformation to get context_encoded_dim
             # Layer 1
-            self.trans_weights = tf.compat.v1.get_variable(
+            self.trans_weights = tf.get_variable(
               name="context_trans_weights",
               shape=[2*self.lstm_size, self.context_encoded_dim],
               initializer=tf.random_normal_initializer(
@@ -89,7 +92,7 @@ class ContextEncoderModel(Model):
 
             self.hidden_layers = []
             for i in range(1, self.num_layers):
-                weight_matrix = tf.compat.v1.get_variable(
+                weight_matrix = tf.get_variable(
                   name="context_hlayer_"+str(i),
                   shape=[self.context_encoded_dim, self.context_encoded_dim],
                   initializer=tf.random_normal_initializer(
@@ -104,19 +107,19 @@ class ContextEncoderModel(Model):
                                             self.hidden_layers[i-1])
                 context_encoded = tf.nn.relu(context_encoded)
 
-            self.context_encoded = tf.compat.v1.nn.dropout(
+            self.context_encoded = tf.nn.dropout(
                 context_encoded, keep_prob=self.dropout_keep_prob)
 
     def get_last_output(self, outputs, lengths, name):
-        reverse_output = tf.compat.v1.reverse_sequence(input=outputs,
-                                             seq_lengths=tf.compat.v1.to_int64(lengths),
-                                             seq_axis=1,
+        reverse_output = tf.reverse_sequence(input=outputs,
+                                             seq_lengths=tf.to_int64(lengths),
+                                             seq_dim=1,
                                              batch_dim=0)
-        en_last_output = tf.compat.v1.slice(input_=reverse_output,
+        en_last_output = tf.slice(input_=reverse_output,
                                   begin=[0,0,0],
                                   size=[self.batch_size, 1, -1])
         # [batch_size, h_dim]
-        encoder_last_output = tf.compat.v1.reshape(en_last_output,
+        encoder_last_output = tf.reshape(en_last_output,
                                          shape=[self.batch_size, -1],
                                          name=name)
 

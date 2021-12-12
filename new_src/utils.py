@@ -38,6 +38,8 @@ RE_TABLE_CELL = re.compile(
     re.UNICODE
 )
 
+RE_ACRONYM = re.compile(r'\s\(([A-Z.]+)\)')
+
 def jsonKeys2int(x):
     if isinstance(x, dict):
             return {int(k):v for k,v in x.items()}
@@ -457,19 +459,18 @@ def remove_templates(text):
 
     return text
 
-def find_positions_of_aliases(previous_text, article_aliases, article_aliases_list, previous_end_index, positions, indices ,aliases_reverse, redirects_reverse, seen_entities, entity=None):
+def find_positions_of_aliases(previous_text, article_aliases, article_aliases_list, previous_end_index, positions, indices ,aliases_reverse, redirects_reverse, seen_entities, seen_entities_split, entity=None):
 
     for tuple in article_aliases_list:
         previous_alias = tuple[0]
         alias_regex = tuple[1]
 
-        candidates = article_aliases[previous_alias]
         len_previous_indices = -1
         while True:
             m = re.search(alias_regex, previous_text)
             if m:
                 start_previous_alias = m.start(1) + previous_end_index
-                positions.append((start_previous_alias, candidates, previous_text[m.start(1):m.end(1)], "candidates"))
+                positions.append((start_previous_alias, None, previous_text[m.start(1):m.end(1)], "alias_match"))
                 previous_text = previous_text[:m.start(1)] + "#" * len(previous_alias) + previous_text[m.end(1):]
                 indices.update(set([i for i in range(start_previous_alias, start_previous_alias + len(previous_alias))]))
                 if len(indices) == len_previous_indices:
@@ -479,11 +480,19 @@ def find_positions_of_aliases(previous_text, article_aliases, article_aliases_li
                 break
     if entity and entity not in seen_entities:
         seen_entities.add(entity)
+
+        for part in entity.split():
+            if part[0].isupper():
+                if part in seen_entities_split:
+                    seen_entities_split[part].append(entity)
+                else:
+                    seen_entities_split[part] = [entity]
+
         # add article aliases
         sort = False
         if entity in aliases_reverse:
             for alias in aliases_reverse[entity]:
-                if len(alias) == 0 or alias[0].islower():
+                if len(alias) == 0 or alias[0].islower() or alias.isnumeric():
                     continue
                 appearances = aliases_reverse[entity][alias]
                 if alias not in article_aliases:
@@ -514,7 +523,56 @@ def find_positions_of_aliases(previous_text, article_aliases, article_aliases_li
         if sort:
             article_aliases_list.sort(key=lambda x: len(x[0]), reverse=True)
 
-def find_positions_of_all_links_with_regex(text, aliases_reverse, redirects_reverse, redirects, article_aliases, article_aliases_list, seen_entities):
+def find_acronyms(acronyms, positions, indices, sentence):
+    current_start = 0
+    while True:
+        m = re.search(RE_ACRONYM, sentence[current_start:])
+        if m is not None:
+            acronym_start = m.span(1)[0] + current_start
+            acronym_end = m.span(0)[1] + current_start
+
+            acronym = m.group(1).replace('.', '')
+
+            before = sentence[:m.span(0)[0] + current_start]
+
+            if len(before) == 0 or len(acronym) == 0:
+                current_start = acronym_end
+                continue
+
+            uppercase_letters = []
+            uppercase_letters_string = ''
+            for i in range(len(before)):
+                c = before[i]
+                if c.isupper():
+                    uppercase_letters.append(i)
+                    uppercase_letters_string += c
+
+            if len(uppercase_letters) >= len(acronym) and uppercase_letters_string[-len(acronym):] == acronym:
+                start_idx = uppercase_letters[-len(acronym)]
+                actual_entity = before[start_idx:].strip()
+                if not actual_entity[-1].isalnum():
+                    actual_entity = actual_entity[:-1]
+
+                acronym = m.group(1)
+
+                start = start_idx
+                if len(indices.intersection(set([j for j in range(start, start + len(actual_entity))]))) == 0:
+                    positions.append((start,None,actual_entity,"acronym_entity"))
+                    indices.update(set([i for i in range(start, start + len(actual_entity))]))
+
+                start = acronym_start
+                if len(indices.intersection(set([j for j in range(start, start + len(acronym))]))) == 0:
+                    positions.append((start, None, acronym, "acronym"))
+                    indices.update(set([i for i in range(start, start + len(actual_entity))]))
+
+                    acronyms[acronym] = actual_entity
+
+            current_start = acronym_end
+        else:
+            break
+
+
+def find_positions_of_all_links_with_regex(acronyms, text, aliases_reverse, redirects_reverse, redirects, article_aliases, article_aliases_list, seen_entities, seen_entities_split):
     positions = []
     indices = set()
     line_entities = set()
@@ -540,7 +598,7 @@ def find_positions_of_all_links_with_regex(text, aliases_reverse, redirects_reve
                 positions.append((start,entity,alias,"annotation"))
 
                 previous_text = text[previous_end_index:start]
-                find_positions_of_aliases(previous_text, article_aliases, article_aliases_list, previous_end_index, positions, indices, aliases_reverse, redirects_reverse, seen_entities, entity=entity)
+                find_positions_of_aliases(previous_text, article_aliases, article_aliases_list, previous_end_index, positions, indices, aliases_reverse, redirects_reverse, seen_entities, seen_entities_split, entity=entity)
 
                 previous_end_index = start + len(alias)
                 indices.update(set([i for i in range(start, start + len(alias))]))
@@ -548,8 +606,12 @@ def find_positions_of_all_links_with_regex(text, aliases_reverse, redirects_reve
         else:
             break
 
+
+
     previous_text = text[previous_end_index:]
-    find_positions_of_aliases(previous_text, article_aliases, article_aliases_list, previous_end_index, positions,indices, aliases_reverse, redirects_reverse, seen_entities)
+    find_positions_of_aliases(previous_text, article_aliases, article_aliases_list, previous_end_index, positions,indices, aliases_reverse, redirects_reverse, seen_entities, seen_entities_split)
+
+    find_acronyms(acronyms, positions, indices, text)
 
     return text, positions, indices, line_entities
 

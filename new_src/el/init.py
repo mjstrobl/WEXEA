@@ -113,7 +113,7 @@ exit(0)
 
 person_candidates = {}
 persons = []
-with open('../../data/persons.txt') as f:
+with open('../../datasets/persons.txt') as f:
     for line in f:
         name = line.strip()
         if "Category" not in name:

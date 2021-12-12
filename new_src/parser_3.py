@@ -18,17 +18,21 @@ def process_article(text,
                     redirects_reverse,
                     aliases_reverse,
                     most_popular_entities,
+                    persons,
                     disambiguations_human,
                     disambiguations_geo,
                     links,
-                    client, props, annotators):
+                    use_entity_linker,
+                    client,
+                    props,
+                    annotators):
 
     article_aliases = {}
     article_aliases_list = []
 
     if title in aliases_reverse:
         for alias in aliases_reverse[title]:
-            if alias[0].islower():
+            if alias[0].islower() or alias.isnumeric():
                 continue
             alias = alias[:-2] if alias.endswith("'s") else alias
             article_aliases[alias] = {title:1}
@@ -47,8 +51,9 @@ def process_article(text,
 
     article_aliases_list.sort(key=lambda x: len(x[0]), reverse=True)
 
-
+    acronyms = {}
     seen_entities = set()
+    seen_entities_split = {}
     complete_content = ''
     for line in text.split('\n'):
         line = line.strip()
@@ -65,7 +70,7 @@ def process_article(text,
             continue
 
         # find positions of annotations
-        line, positions, indices, line_entities = find_positions_of_all_links_with_regex(line, aliases_reverse, redirects_reverse, redirects, article_aliases, article_aliases_list, seen_entities)
+        line, positions, indices, line_entities = find_positions_of_all_links_with_regex(acronyms, line, aliases_reverse, redirects_reverse, redirects, article_aliases, article_aliases_list, seen_entities, seen_entities_split)
 
         try:
             annotation = client.annotate(line, properties=props, annotators=annotators)
@@ -76,9 +81,14 @@ def process_article(text,
                     start = tokens[0].beginChar
                     end = tokens[-1].endChar
                     alias = line[start:end]
+
                     if len(indices.intersection(set([j for j in range(start, start + len(alias))]))) == 0:
-                        positions.append((start,None,alias,ner))
+                        if alias in acronyms:
+                            positions.append((start, acronyms[alias], alias, 'acronym_ner'))
+                        else:
+                            positions.append((start,None,alias,ner))
         except Exception as e:
+            print(e)
             pass
 
 
@@ -87,76 +97,148 @@ def process_article(text,
         num_additional_characters = 0
 
 
-        for tuple in positions:
+        for i in range(len(positions)):
+            tuple = positions[i]
             start = tuple[0] + num_additional_characters
             entity = tuple[1]
             alias = tuple[2]
+            alias_to_print = alias
             tag = tuple[3]
 
-            if entity and tag == 'annotation':
-                new_annotation = '[[' + entity + "|" + alias + '|' + tag + ']]'
-                #find_positions_of_aliases(title_aliases, aliases_reverse, redirects_reverse, entity)
-            elif alias == title or (alias in article_aliases and title in article_aliases[alias]):
-                new_annotation = '[[' + title + "|" + alias + '|article_entity]]'
-            elif alias in seen_entities:
-                new_annotation = '[[' + alias + "|" + alias + '|match_candidate]]'
-            elif alias in redirects and redirects[alias] in seen_entities:
-                new_annotation = '[[' + redirects[alias] + "|" + alias + '|redirect_candidate]]'
-            elif alias in most_popular_entities:
-                new_annotation = '[[' + alias + "|" + alias + '|popular_entity]]'
-            elif alias in redirects and redirects[alias] in most_popular_entities:
-                new_annotation = '[[' + redirects[alias] + "|" + alias + '|popular_redirect]]'
-            elif alias in article_aliases and len(article_aliases[alias]) == 1:
-                entity = list(article_aliases[alias])[0]
-                new_annotation = '[[' + entity + "|" + alias + '|single_candidate]]'
-            elif alias in article_aliases:
-                entity_or_candidates = article_aliases[alias]
-                max_links = 0
-                best_candidate = None
-                for candidate in entity_or_candidates:
-                    if candidate in title2Id:
-                        candidate_id = title2Id[candidate]
-                        if candidate_id in links:
-                            candidate_links = links[candidate_id]
-                            if title_id in candidate_links:
-                                num_links = candidate_links[title_id]
-                                if num_links > max_links:
-                                    max_links = num_links
-                                    best_candidate = candidate
-                if best_candidate:
-                    new_annotation = '[[' + best_candidate + "|" + alias + '|best_links]]'
-                else:
-                    line_candidates = line_entities.intersection(set(entity_or_candidates.keys()))
-                    tag = 'best_alias'
-                    if len(line_candidates) > 0:
-                        tag = 'line_candidate'
-                        max_matches = 0
-                        for candidate in line_candidates:
-                            if entity_or_candidates[candidate] > max_matches:
-                                max_matches = entity_or_candidates[candidate]
-                                best_candidate = candidate
+            tag_to_print = tag
+
+            if alias is not None and len(alias) > 0:
+                if tag == "acronym_ner":
+                    alias = entity
+
+                if tag == "acronym" and i > 0:
+                    entity = positions[i-1][1]
+                elif entity and tag == 'annotation':
+                    if alias[0].isupper() or alias[0].isnumeric():
+                        tag_to_print = tag
                     else:
-                        max_matches = 0
-                        for candidate in entity_or_candidates:
-                            if entity_or_candidates[candidate] > max_matches:
-                                max_matches = entity_or_candidates[candidate]
-                                best_candidate = candidate
-
-                    new_annotation = '[[' + best_candidate + "|" + alias + '|' + tag + ']]'
-            else:
-                if alias in most_popular_entities:
-                    new_annotation = '[[' + alias + "|" + alias + '|popular_entity]]'
+                        entity = None
+                        alias_to_print = None
+                elif alias == title or (alias in article_aliases and title in article_aliases[alias]):
+                    # alias seems to correspond to article entity
+                    entity = title
+                    tag_to_print += "_article_entity"
+                elif alias in seen_entities:
+                    # alias matches already seen entity
+                    entity = alias
+                    tag_to_print += "_match_candidate"
+                elif alias in redirects and redirects[alias] in seen_entities:
+                    # alias in redirects and redirected alias matches already seen entity
+                    entity = redirects[alias]
+                    tag_to_print += "_redirect_candidate"
+                elif alias in most_popular_entities:
+                    # alias is a popular entity
+                    entity = alias
+                    tag_to_print += "_popular_entity"
                 elif alias in redirects and redirects[alias] in most_popular_entities:
-                    new_annotation = '[[' + redirects[alias] + "|" + alias + '|popular_redirect]]'
-                elif alias in disambiguations_human:
-                    new_annotation = '[[' + alias + "|" + alias + '|human_disambiguation]]'
-                elif alias in disambiguations_geo:
-                    new_annotation = '[[' + alias + "|" + alias + '|geo_disambiguation]]'
-                else:
-                    new_annotation = '[[' + alias + '|' + tag + ']]'
+                    # redirect of alias is a popular entity
+                    entity = redirects[alias]
+                    tag_to_print += "_popular_redirect"
+                elif alias in article_aliases and len(article_aliases[alias]) == 1:
+                    # alias refers to a single candidate through aliases from all already seen entities
+                    entity = list(article_aliases[alias])[0]
+                    tag_to_print += "_single_candidate"
+                elif alias in article_aliases:
+                    # alias has multiple candidates from entities already seen
+                    candidates = article_aliases[alias]
 
-            num_additional_characters += (len(new_annotation) - len(alias))
-            line = line[:start] + new_annotation + line[start + len(alias):]
+                    all_persons = True
+                    file_entity_in_candidates = False
+                    for candidate in candidates:
+                        if candidate not in persons:
+                            all_persons = False
+                            break
+                    max_links = 0
+                    best_candidate = None
+
+                    if all_persons:
+                        for candidate in candidates:
+                            if candidate in title2Id:
+                                candidate_id = title2Id[candidate]
+                                if candidate_id in links:
+                                    candidate_links = links[candidate_id]
+                                    if title_id in candidate_links:
+                                        num_links = candidate_links[title_id]
+                                        if num_links > max_links:
+                                            max_links = num_links
+                                            best_candidate = candidate
+                    if best_candidate and all_persons:
+                        # all candidates are persons and we pick the one with the most links to the article entity
+                        entity = best_candidate
+                        tag_to_print += "_best_links"
+                    else:
+                        # candidates either not all persons or there are no linked candidates, EL has to figure it out.
+                        line_candidates = line_entities.intersection(set(candidates.keys()))
+                        new_tag = '_best_alias'
+                        if len(line_candidates) > 0:
+                            new_tag = '_line_candidate'
+
+                            if len(line_candidates) == 1:
+                                new_tag = '_single_line_candidate'
+                                entity = list(line_candidates)[0]
+                            else:
+                                new_tag = '_multiple_line_candidates'
+                                entity = '###'.join(list(line_candidates))
+
+
+                            if not use_entity_linker:
+                                max_matches = 0
+                                for candidate in line_candidates:
+                                    if candidates[candidate] > max_matches:
+                                        max_matches = candidates[candidate]
+                                        best_candidate = candidate
+
+                                entity = best_candidate
+                        else:
+                            new_tag = '_multiple_candidates'
+                            if not use_entity_linker:
+                                max_matches = 0
+                                for candidate in candidates:
+                                    if candidates[candidate] > max_matches:
+                                        max_matches = candidates[candidate]
+                                        best_candidate = candidate
+                                entity = best_candidate
+                            else:
+                                entity = '###'.join(list(candidates.keys()))
+
+                        tag_to_print += new_tag
+                elif alias in disambiguations_human:
+                    # best that could be found is a human disambiguation page
+                    entity = alias
+                    tag_to_print += "_human_disambiguation"
+                elif alias in disambiguations_geo:
+                    # best that could be found is a geographical disambiguation page
+                    entity = alias
+                    tag_to_print += "_geo_disambiguation"
+                else:
+                    # check if alias part of seen entity
+                    if alias in seen_entities_split:
+                        entity = '###'.join(seen_entities_split[alias])
+                        tag_to_print += "_part_of_seen_entity"
+
+                if tag == "acronym_entity":
+                    new_tuple = (start,entity,alias,tag)
+                    positions[i] = new_tuple
+            else:
+                entity = None
+                alias_to_print = None
+
+            if entity is None:
+                if alias_to_print is None:
+                    new_annotation = alias
+                    alias_to_print = alias
+                else:
+                    new_annotation = '[[' + alias_to_print + '|' + tag_to_print + ']]'
+            else:
+                new_annotation = '[[' + entity + "|" + alias_to_print + '|' + tag_to_print + ']]'
+
+            num_additional_characters += (len(new_annotation) - len(alias_to_print))
+            line = line[:start] + new_annotation + line[start + len(alias_to_print):]
 
         complete_content += '\n' + line
 
@@ -174,11 +256,14 @@ def process_articles(process_index,
                      redirects_reverse,
                      aliases_reverse,
                      most_popular_entities,
+                     persons,
                      disambiguations_human,
                      disambiguations_geo,
-                     links, logging_path):
+                     links, use_entity_linker, logging_path):
 
     start_time = time.time()
+
+    print('start processing')
 
     counter_all = 0
 
@@ -199,45 +284,48 @@ def process_articles(process_index,
         if i % num_processes == process_index:
             filename = filenames[i]
             title = filename2title[filename]
-            #if title == "Queen Victoria" or title == "Wilhelm II, German Emperor":
-            try:
-                if title in title2Id:
-                    title_id = title2Id[title]
+            #if title == "Queen Victoria" or title == "Wilhelm II, German Emperor" or title == 'Queen Victoria Park':
+            #try:
+            if title in title2Id:
+                title_id = title2Id[title]
 
 
 
-                    new_filename, _, _, _ = create_filename(title, outputpath + ARTICLE_OUTPUTPATH + '/')
-                    new_filename2title[new_filename] = title
+                new_filename, _, _, _ = create_filename(title, outputpath + ARTICLE_OUTPUTPATH + '/')
+                new_filename2title[new_filename] = title
 
-                    logger.write("Start with file: " + new_filename + "\n")
+                logger.write("Start with file: " + new_filename + "\n")
 
-                    if not os.path.isfile(new_filename):
-                        with open(filename) as f:
-                            text = f.read()
-                            process_article(text,
-                                            title,
-                                            title_id,
-                                            title2Id,
-                                            redirects,
-                                            redirects_reverse,
-                                            aliases_reverse,
-                                            most_popular_entities,
-                                            disambiguations_human,
-                                            disambiguations_geo,
-                                            links,
-                                            client, props, annotators)
+                if not os.path.isfile(new_filename):
+                    with open(filename) as f:
+                        text = f.read()
+                        process_article(text,
+                                        title,
+                                        title_id,
+                                        title2Id,
+                                        redirects,
+                                        redirects_reverse,
+                                        aliases_reverse,
+                                        most_popular_entities,
+                                        persons,
+                                        disambiguations_human,
+                                        disambiguations_geo,
+                                        links,use_entity_linker,
+                                        client, props, annotators)
 
-                        logger.write("File done: " + new_filename + "\n")
-                    else:
-                        logger.write("File exists: " + new_filename + "\n")
 
-                    counter_all += 1
-                    if process_index == 0:
-                        time_per_article = (time.time() - start_time) / counter_all
-                        print("Process " + str(process_index) + ', articles: ' + str(counter_all) + ", avg time: " +
-                              str(time_per_article), end='\r')
-            except Exception as e:
-                pass
+                    logger.write("File done: " + new_filename + "\n")
+                else:
+                    logger.write("File exists: " + new_filename + "\n")
+
+                counter_all += 1
+                if process_index == 0:
+                    time_per_article = (time.time() - start_time) / counter_all
+                    print("Process " + str(process_index) + ', articles: ' + str(counter_all) + ", avg time: " +
+                          str(time_per_article), end='\r')
+            #except Exception as e:
+            #    print(e)
+            #    pass
 
 
     print("Process " + str(process_index) + ', articles processed: ' + str(counter_all))
@@ -250,47 +338,6 @@ def process_articles(process_index,
     print("Process " + str(process_index) + ", elapsed time: %s" % str(datetime.timedelta(seconds=elapsed_time)))
 
     logger.close()
-
-def test():
-    config = json.load(open('../config/config.json'))
-    outputpath = config['outputpath']
-    dictionarypath = outputpath + 'dictionaries/'
-
-    redirects = json.load(open(dictionarypath + 'redirects_pruned.json'))
-    redirects_reverse = json.load(open(dictionarypath + 'redirects_reverse.json'))
-    aliases_reverse = json.load(open(dictionarypath + 'aliases_reverse.json'))
-    most_popular_entities = json.load(open(dictionarypath + 'most_popular_entities.json'))
-    disambiguations_human = json.load(open(dictionarypath + 'disambiguations_human.json'))
-    disambiguations_geo = json.load(open(dictionarypath + 'disambiguations_geo.json'))
-    title2Id = json.load(open(dictionarypath + 'title2Id_pruned.json'))
-    links = json.load(open(dictionarypath + 'links_pruned.json'), object_hook=jsonKeys2int)
-
-    props = {"ssplit.isOneSentence": True, "ner.applyNumericClassifiers": False,
-             "ner.model": "edu/stanford/nlp/models/ner/english.conll.4class.distsim.crf.ser.gz",
-             "ner.applyFineGrained": False, "ner.statisticalOnly": True, "ner.useSUTime": False}
-    annotators = ['tokenize', 'ssplit', 'pos', 'lemma', 'ner']
-    client = CoreNLPClient(
-        annotators=annotators,
-        properties=props,
-        timeout=60000, endpoint="http://localhost:9000", start_server=False, memory='16g')
-    with open('/media/michi/Data/latest_wiki/articles_2/t/te/tex/Textile_(markup_language).txt') as f:
-        text = f.read()
-        title = 'Textile (markup language)'
-        if title in title2Id:
-            title_id = title2Id[title]
-            print('start processing')
-            process_article(text,
-                            title,
-                            title_id,
-                            title2Id,
-                            redirects,
-                            redirects_reverse,
-                            aliases_reverse,
-                            most_popular_entities,
-                            disambiguations_human,
-                            disambiguations_geo,
-                            links,
-                            client, props, annotators)
 
 if (__name__ == "__main__"):
     config = json.load(open('config/config.json'))
@@ -306,7 +353,10 @@ if (__name__ == "__main__"):
     except OSError:
         print("directories exist already")
 
+    use_entity_linker = True
+
     redirects = json.load(open(dictionarypath + 'redirects_pruned.json'))
+    persons = set(json.load(open('data/persons.json')))
     redirects_reverse = json.load(open(dictionarypath + 'redirects_reverse.json'))
     aliases_reverse = json.load(open(dictionarypath + 'aliases_reverse.json'))
     most_popular_entities = json.load(open(dictionarypath + 'most_popular_entities.json'))
@@ -331,9 +381,10 @@ if (__name__ == "__main__"):
                                                                    redirects_reverse,
                                                                    aliases_reverse,
                                                                    most_popular_entities,
+                                                                   persons,
                                                                    disambiguations_human,
                                                                    disambiguations_geo,
-                                                                   links,logging_path))
+                                                                   links, use_entity_linker,logging_path))
 
         jobs.append(p)
         p.start()

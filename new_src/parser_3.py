@@ -88,7 +88,7 @@ def process_article(text,
                         else:
                             positions.append((start,None,alias,ner))
         except Exception as e:
-            print(e)
+            #print(e)
             pass
 
 

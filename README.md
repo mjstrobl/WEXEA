@@ -61,6 +61,9 @@ Dictionaries:
 
 A number of processes can be set to speed up the parsing process of all articles. However, each process consumes around 7.5GB of memory.
 
+### Parser 3 (~2 days with 6 processes / ~2,700,00 articles to process)
+
+
 ## Citation (bibtex)
 
 @InProceedings{strobl-trabelsi-zaiane:2020:LREC,

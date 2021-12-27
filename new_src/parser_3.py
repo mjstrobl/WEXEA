@@ -111,7 +111,10 @@ def process_article(text,
                 if tag == "acronym_ner":
                     alias = entity
 
-                if tag == "acronym" and i > 0:
+                if tag == 'DATE' or tag == 'TIME' or tag == 'DURATION' or tag == 'SET':
+                    tag_to_print = tag
+                    entity = None
+                elif tag == "acronym" and i > 0:
                     entity = positions[i-1][1]
                 elif entity and tag == 'annotation':
                     if alias[0].isupper() or alias[0].isnumeric():
@@ -271,7 +274,7 @@ def process_articles(process_index,
 
     props = {"ssplit.isOneSentence": True, "ner.applyNumericClassifiers": False,
              "ner.model": "edu/stanford/nlp/models/ner/english.conll.4class.distsim.crf.ser.gz",
-             "ner.applyFineGrained": False, "ner.statisticalOnly": True, "ner.useSUTime": False}
+             "ner.applyFineGrained": False, "ner.statisticalOnly": True, "ner.useSUTime": True}
     annotators = ['tokenize', 'ssplit', 'pos', 'lemma', 'ner']
     client = CoreNLPClient(
         annotators=annotators,

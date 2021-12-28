@@ -71,10 +71,11 @@ def process_article(text,
 
         # find positions of annotations
         line, positions, indices, line_entities = find_positions_of_all_links_with_regex(acronyms, line, aliases_reverse, redirects_reverse, redirects, article_aliases, article_aliases_list, seen_entities, seen_entities_split)
-
+        sentence_breaks = []
         try:
             annotation = client.annotate(line, properties=props, annotators=annotators)
             for i, sent in enumerate(annotation.sentence):
+                sentence_breaks.append(sent.characterOffsetEnd)
                 for mention in sent.mentions:
                     ner = mention.ner
                     tokens = sent.token[mention.tokenStartInSentenceInclusive:mention.tokenEndInSentenceExclusive]
@@ -96,9 +97,12 @@ def process_article(text,
 
         num_additional_characters = 0
 
-
+        current_sent_idx = 0
         for i in range(len(positions)):
             tuple = positions[i]
+            while current_sent_idx < len(sentence_breaks) and tuple[0] > sentence_breaks[current_sent_idx]:
+                sentence_breaks[current_sent_idx] += num_additional_characters
+                current_sent_idx += 1
             start = tuple[0] + num_additional_characters
             entity = tuple[1]
             alias = tuple[2]
@@ -242,9 +246,14 @@ def process_article(text,
 
             num_additional_characters += (len(new_annotation) - len(alias_to_print))
             line = line[:start] + new_annotation + line[start + len(alias_to_print):]
-
+        
+        for i in reversed(range(len(sentence_breaks)-1)):
+            line = line[:sentence_breaks[i]] + '\n' + line[sentence_breaks[i]:]
+        
         complete_content += '\n' + line
-
+    
+    
+    
     filename = create_file_name_and_directory(title, outputpath + ARTICLE_OUTPUTPATH + '/')
     with open(filename, 'w') as f:
         f.write(complete_content.strip())

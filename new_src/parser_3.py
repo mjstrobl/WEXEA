@@ -272,9 +272,7 @@ def process_articles(process_index,
 
     new_filename2title = {}
 
-    props = {"ssplit.isOneSentence": True, "ner.applyNumericClassifiers": False,
-             "ner.model": "edu/stanford/nlp/models/ner/english.conll.4class.distsim.crf.ser.gz",
-             "ner.applyFineGrained": False, "ner.statisticalOnly": True, "ner.useSUTime": True}
+    props = {"ner.applyFineGrained": False, "ner.model": "edu/stanford/nlp/models/ner/english.muc.7class.distsim.crf.ser.gz"}
     annotators = ['tokenize', 'ssplit', 'pos', 'lemma', 'ner']
     client = CoreNLPClient(
         annotators=annotators,

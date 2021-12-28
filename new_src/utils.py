@@ -276,12 +276,14 @@ def process_month(month):
 def process_template(template_lower,template):
     tokens = template.split("|")
     new_tokens = []
-    for i in range(len(tokens)):
+    i = 0
+    while i < len(tokens):
         if '[[' in tokens[i] and ']]' not in tokens[i] and i < len(tokens) - 1 and ']]' in tokens[i+1]:
             new_tokens.append(tokens[i] + '|' + tokens[i+1])
             i += 1
         else:
             new_tokens.append(tokens[i])
+        i += 1
             
     tokens = new_tokens
     if template_lower.startswith("quote"):

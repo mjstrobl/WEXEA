@@ -78,7 +78,7 @@ def process_article(text,
                 sentence_breaks.append(sent.characterOffsetEnd)
                 for mention in sent.mentions:
                     ner = mention.ner
-                    tokens = sent.token[mention.tokenStartInSentenceInclusive:mention.tokenEndInSentenceExclusive]
+                    tokens = sent.token[mention.tokenStartInSentenceInclusive-sent.tokenOffsetBegin:mention.tokenEndInSentenceExclusive-sent.tokenOffsetBegin]
                     start = tokens[0].beginChar
                     end = tokens[-1].endChar
                     alias = line[start:end]

@@ -248,7 +248,7 @@ def process_article(text,
             line = line[:start] + new_annotation + line[start + len(alias_to_print):]
         
         for i in reversed(range(len(sentence_breaks)-1)):
-            line = line[:sentence_breaks[i]] + '\n' + line[sentence_breaks[i]:]
+            line = line[:sentence_breaks[i]] + '\n' + line[sentence_breaks[i]:].strip()
         
         complete_content += '\n' + line
     

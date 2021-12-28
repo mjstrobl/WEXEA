@@ -285,7 +285,6 @@ def merge_all_dictionaries(all_titles,title2Id):
 
     with open(dictionarypath + 'aliases.json', 'w') as f:
         json.dump(aliases, f)
-    exit(0)
     with open(dictionarypath + 'disambiguations_other.json', 'w') as f:
         json.dump(other_disambiguations, f)
     with open(dictionarypath + 'disambiguations_human.json', 'w') as f:

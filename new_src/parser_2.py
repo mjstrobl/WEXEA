@@ -4,17 +4,12 @@ import json
 import multiprocessing
 import time
 import datetime
-from utils import is_upper, IGNORED_NAMESPACES, find_categories, find_entities, add_disambgiuation, create_file_name_and_directory, remove_notes, create_filename, find_same_entity_mentions, remove_external_links, clean_text, remove_files, remove_galleries, remove_tables, remove_templates, remove_irrelevant_sections
+from utils import find_categories, find_entities, add_disambiguation, create_file_name_and_directory, remove_notes, find_same_entity_mentions, remove_external_links, clean_text, remove_files, remove_galleries, remove_tables, remove_templates, remove_irrelevant_sections
+
+from language_specifics import IGNORED_NAMESPACES, RE_STUB, RE_HUMAN_DISAMBIGUATIONS, RE_GEO_DISAMBIGUATIONS, RE_NUMBER_DISAMBIGUATIONS, \
+    RE_DISAMBIGUATIONS, GIVEN_NAMES, SURNAMES, INFOBOX
 
 ARTICLE_OUTPUTPATH = "articles_2"
-
-RE_DISAMBIGUATIONS = '{{set index article}}|{{SIA}}|{{disambiguation\||\|disambiguation}}|{{disambiguation}}|{{disamb}}|{{disambig}}|{{disamb\||\|disamb}}|{{disambig\||\|disambig}}|{{dab\||\|dab}}|{{dab}}|{{disambiguation cleanup}}'
-RE_HUMAN_DISAMBIGUATIONS = '{{hndis\||\|hndis}}|{{hndis}}|{{human name disambiguation}}|{{human name disambiguation\||\|human name disambiguation}}'
-RE_GEO_DISAMBIGUATIONS = '{{place name disambiguation}}|{{geodis}}|{{geodis\||\|geodis}}'
-RE_NUMBER_DISAMBIGUATIONS = '{{number disambiguation\||\|number disambiguation}}|{{numdab\||\|numdab}}|{{numberdis\||\|numberdis}}|{{numberdis}}|{{numdab}}|{{number disambiguation}}'
-RE_STUB = 'stub}}'
-GIVEN_NAMES = '{{given name}}', '[[Category:Given names]]', '[[Category:Masculine given names]]', '[[Category:Feminine given names]]'
-SURNAMES = '{{surname}}', '[[Category:Surnames]]'
 
 def process_list(text, redirects, aliases):
     find_entities(text, redirects, aliases)
@@ -47,22 +42,22 @@ def process_article(text,
         filename = outputpath + 'disambiguations_human/' + title.replace(" ", '_').replace('/', '_') + '.txt'
         with open(filename, 'w') as f:
             f.write(text)
-        add_disambgiuation(lines, title, human_disambiguations, redirects, aliases)
+        add_disambiguation(lines, title, human_disambiguations, redirects, aliases)
     elif any(re.findall(RE_GEO_DISAMBIGUATIONS, text.lower())):
         filename = outputpath + 'disambiguations_geo/' + title.replace(" ", '_').replace('/', '_') + '.txt'
         with open(filename, 'w') as f:
             f.write(text)
-        add_disambgiuation(lines, title, geo_disambiguations, redirects, aliases)
+        add_disambiguation(lines, title, geo_disambiguations, redirects, aliases)
     elif any(re.findall(RE_NUMBER_DISAMBIGUATIONS, text.lower())):
         filename = outputpath + 'disambiguations_number/' + title.replace(" ", '_').replace('/', '_') + '.txt'
         with open(filename, 'w') as f:
             f.write(text)
-        add_disambgiuation(lines, title, number_disambiguations, redirects, aliases)
+        add_disambiguation(lines, title, number_disambiguations, redirects, aliases)
     elif any(re.findall(RE_DISAMBIGUATIONS, text.lower())) or '(disambiguation)' in title:
         filename = outputpath + 'disambiguations_other/' + title.replace(" ", '_').replace('/', '_') + '.txt'
         with open(filename, 'w') as f:
             f.write(text)
-        add_disambgiuation(lines, title, other_disambiguations, redirects, aliases)
+        add_disambiguation(lines, title, other_disambiguations, redirects, aliases)
     elif not any(title.lower().startswith(ignore + ':') for ignore in IGNORED_NAMESPACES):
 
         links[title_id] = {}
@@ -75,7 +70,7 @@ def process_article(text,
 
         filename = create_file_name_and_directory(title, outputpath + ARTICLE_OUTPUTPATH + '/')
 
-        pos_infobox = text.find('{{Infobox')
+        pos_infobox = text.find('{{' + INFOBOX)
         if pos_infobox > -1:
             text = text[pos_infobox:]
 

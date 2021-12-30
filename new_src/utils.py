@@ -3,33 +3,24 @@ import os
 import time
 import json
 
+from language_specifics import RE_REMOVE_SECTIONS, RE_CATEGORIES, CONVERT_TEMPLATE_SEPARATORS, RE_FILES, LIST, FILE, IMAGE, TEMPLATE_QUOTE, \
+    LANG, AS_OF, CONVERT, TEMPLATE, DASH, INFOBOX
+
 current_milli_time = lambda: int(round(time.time() * 1000))
 
-IGNORED_NAMESPACES = [
-    'wikipedia', 'category', 'file', 'portal', 'template',
-    'mediaWiki', 'user', 'help', 'book', 'draft', 'wikiProject',
-    'special', 'talk', 'image','module'
-]
-
-CONVERT_TEMPLATE_SEPARATORS = {'-':'-','&ndash;':'-','and':' and ','and(-)':' and ','or':' or ','to':' to ','to(-)':' to ','to about':' to about ','+/-':' ± ','±':' ± ','&plusmn;':' ± ','+':' + ',',':', ',', and':', and ',', or':', or ','by':' by ','x':' by ','&times;':' by '}
-
+RE_FOOTNOTES = re.compile(r'<ref([> ].*?)(</ref>|/>)', re.DOTALL | re.UNICODE)
+RE_MATH = re.compile(r'<math([> ].*?)(</math>|/>)', re.DOTALL | re.UNICODE)
+RE_NOWIKI = re.compile(r'<nowiki([> ].*?)(</nowiki>|/>)', re.DOTALL | re.UNICODE)
 RE_LINKS = re.compile(r'\[{2}(.*?)\]{2}', re.DOTALL | re.UNICODE)
 RE_MENTIONS = re.compile(r'\'\'\'(.*?)\'\'\'', re.DOTALL | re.UNICODE)
 RE_EXTERNAL_LINKS = re.compile(r'\[(\w+):\/\/(.*?)(( (.*?))|())\]', re.UNICODE)
-RE_CATEGORIES = re.compile(r'\[\[Category:(.*?)\]\]', re.UNICODE)
 RE_TEMPLATE_1 = re.compile(r'{{([^}{]*)}}', re.DOTALL | re.UNICODE | re.MULTILINE)
-RE_CATEGORY_REDIRECT = re.compile(r'{{Category redirect\|([^}{]*)}}', re.DOTALL | re.UNICODE | re.MULTILINE)
-RE_REMOVE_SECTIONS = re.compile(r'==\s*See also|==\s*References|==\s*Bibliography|==\s*Sources|==\s*Notes|==\s*Further Reading',re.DOTALL | re.UNICODE)
 RE_TABLE = re.compile(r'\{\|(.*?)\|\}', re.DOTALL | re.UNICODE | re.MULTILINE)
-RE_FILES = re.compile(r'\[\[(Image|File.*?)\]\]', re.UNICODE)
 RE_INFO_OR_TABLE_LINE = re.compile(r'^[\|].*\n?', flags=re.MULTILINE)
 RE_COMMENTS = re.compile(r'<!--.*?-->', re.DOTALL | re.UNICODE)
 RE_NEWLINES = re.compile(r'\n{2,}', re.DOTALL | re.UNICODE)
-RE_FOOTNOTES = re.compile(r'<ref([> ].*?)(</ref>|/>)', re.DOTALL | re.UNICODE)
-RE_MATH = re.compile(r'<math([> ].*?)(</math>|/>)', re.DOTALL | re.UNICODE)
 RE_TAGS = re.compile(r'<(.*?)>', re.DOTALL | re.UNICODE)
 RE_COMMENTS = re.compile(r'(\n\[\[[a-z][a-z][\w-]*:[^:\]]+\]\])+$', re.UNICODE)
-RE_NOWIKI = re.compile(r'<nowiki([> ].*?)(</nowiki>|/>)', re.DOTALL | re.UNICODE)
 RE_EXTERNAL = re.compile(r'(?<=(\n[ ])|(\n\n)|([ ]{2})|(.\n)|(.\t))(\||\!)([^[\]\n]*?\|)*', re.UNICODE)
 RE_BRACKETS = re.compile(r' ?\( *\)')
 RE_TABLE_CELL = re.compile(
@@ -40,10 +31,12 @@ RE_TABLE_CELL = re.compile(
 
 RE_ACRONYM = re.compile(r'\s\(([A-Z.]+)\)')
 
+
 def jsonKeys2int(x):
     if isinstance(x, dict):
-            return {int(k):v for k,v in x.items()}
+        return {int(k): v for k, v in x.items()}
     return x
+
 
 def is_number(s):
     try:
@@ -52,21 +45,24 @@ def is_number(s):
     except ValueError:
         return False
 
+
 def is_upper(alias):
     for i in range(len(alias)):
         if alias[i].isupper():
             return True
     return False
 
+
 def intersec(s1, s2):
     s1 = set(s1.split())
     s2 = set(s2.split())
     return len(s1.intersection(s2))
 
-def add_disambgiuation(lines, title, disambiguations, redirects, aliases):
+
+def add_disambiguation(lines, title, disambiguations, redirects, aliases):
     disambiguations[title] = []
     for line in lines:
-        if line.startswith("==See also=="):
+        if re.search(RE_REMOVE_SECTIONS, line):
             break
         match = re.search(RE_LINKS, line)
         if match:
@@ -80,8 +76,9 @@ def add_disambgiuation(lines, title, disambiguations, redirects, aliases):
                 entity = add_alias(entity, alias, aliases, redirects)
                 disambiguations[title].append(entity)
 
-def add_alias(entity,alias, aliases, redirects):
-    if entity.lower().startswith('file:') or entity.lower().startswith('image:') or entity.lower().startswith('list of'):
+
+def add_alias(entity, alias, aliases, redirects):
+    if entity.lower().startswith(FILE + ':') or entity.lower().startswith(IMAGE + ':') or entity.lower().startswith(LIST):
         return entity
 
     if entity in redirects:
@@ -94,6 +91,7 @@ def add_alias(entity,alias, aliases, redirects):
     aliases[alias][entity] += 1
 
     return entity
+
 
 def create_directory(directory):
     if not os.path.isdir(directory):
@@ -108,7 +106,8 @@ def create_directory(directory):
 
     return True
 
-def create_filename(title,outputpath):
+
+def create_filename(title, outputpath):
     file_directory = re.sub('[^0-9a-z]+', '_', title.lower())
     while len(file_directory) < 3:
         file_directory += '_'
@@ -127,14 +126,14 @@ def create_filename(title,outputpath):
 
 
 def create_file_name_and_directory(title, outputpath):
-
-    filename, first_directory, second_directory, third_directory = create_filename(title,outputpath)
+    filename, first_directory, second_directory, third_directory = create_filename(title, outputpath)
 
     if create_directory(first_directory) and create_directory(second_directory) and create_directory(third_directory):
 
         return filename
     else:
         return None
+
 
 # Sometimes article entities are mentioned in bold at the beginning of their article, which is captured here.
 def find_same_entity_mentions(text, title):
@@ -181,12 +180,14 @@ def find_same_entity_mentions(text, title):
             break
     return text
 
+
 def add_link(entity, title_id, title2Id, links):
     if entity in title2Id:
         entity_id = title2Id[entity]
         if entity_id not in links[title_id]:
             links[title_id][entity_id] = 0
         links[title_id][entity_id] += 1
+
 
 def find_categories(text, categories, title):
     categories[title] = []
@@ -205,6 +206,7 @@ def find_categories(text, categories, title):
 
     return text
 
+
 def remove_external_links(text):
     external_links = []
 
@@ -220,6 +222,7 @@ def remove_external_links(text):
             break
 
     return text, external_links
+
 
 def remove_galleries(text):
     while True:
@@ -240,10 +243,12 @@ def remove_galleries(text):
 
     return text
 
+
 def remove_notes(text):
     text = re.sub(r'^:.*\n?', '', text, flags=re.MULTILINE)
     return text
 
+# does not exist in German or French
 def process_month(month):
     if "jan" in month or '1' in month:
         return 'January'
@@ -273,9 +278,10 @@ def process_month(month):
         return ''
 
 
-def process_template(template_lower,template):
+def process_template(template_lower, template):
     tokens = template.split("|")
     new_tokens = []
+
     i = 0
     while i < len(tokens):
         if '[[' in tokens[i] and ']]' not in tokens[i] and i < len(tokens) - 1 and ']]' in tokens[i+1]:
@@ -286,15 +292,16 @@ def process_template(template_lower,template):
         i += 1
             
     tokens = new_tokens
-    if template_lower.startswith("quote"):
+    if template_lower.startswith(TEMPLATE_QUOTE):
+
         if len(tokens) == 1:
             return ""
         return '"' + tokens[1] + '"'
-    elif template_lower.startswith("wikt-lang") or template_lower.startswith("lang"):
+    elif any(template_lower.startswith(lang) for lang in LANG):
         for i in reversed(range(len(tokens))):
             if '=' not in tokens[i]:
                 return tokens[i]
-    elif template_lower.startswith('as of'):
+    elif template_lower.startswith(AS_OF):
         lc = False
         since = False
         alt = None
@@ -307,7 +314,7 @@ def process_template(template_lower,template):
         if len(tokens) == 1:
             return ""
         else:
-            for i in range(1,len(tokens)):
+            for i in range(1, len(tokens)):
                 token = tokens[i]
                 if token.strip().startswith('lc') and ('y' in token or ("lc=" in token and len(token) == 3)):
                     lc = True
@@ -363,7 +370,7 @@ def process_template(template_lower,template):
                 replacement += post + " "
 
             return replacement
-    elif template_lower.startswith('convert') or template_lower.startswith('cvt'):
+    elif any(template_lower.startswith(cvt) for cvt in CONVERT):
         if len(tokens) == 1:
             return ""
         else:
@@ -394,9 +401,10 @@ def process_template(template_lower,template):
 
     return ""
 
-def remove_templates(text):
 
-    text = text.replace('{{spaced ndash}}', ' - ')
+def remove_templates(text):
+    for dash in DASH:
+        text = text.replace(dash, ' - ')
 
     while True:
         m = re.search(RE_TEMPLATE_1, text)
@@ -462,14 +470,16 @@ def remove_templates(text):
     for i in range(len(text_to_remove)):
         tuple = text_to_remove[i]
         removed_text = text[tuple[0] - offset:tuple[1] - offset]
-        if removed_text.lower().startswith('{{template'):
+        if removed_text.lower().startswith('{{' + TEMPLATE):
             continue
         text = text[:tuple[0] - offset] + text[tuple[1] - offset:]
 
     return text
 
-def find_positions_of_aliases(previous_text, article_aliases, article_aliases_list, previous_end_index, positions, indices ,aliases_reverse, redirects_reverse, seen_entities, seen_entities_split, entity=None):
 
+def find_positions_of_aliases(previous_text, article_aliases, article_aliases_list, previous_end_index, positions,
+                              indices, aliases_reverse, redirects_reverse, seen_entities, seen_entities_split,
+                              entity=None):
     for tuple in article_aliases_list:
         previous_alias = tuple[0]
         alias_regex = tuple[1]
@@ -481,7 +491,8 @@ def find_positions_of_aliases(previous_text, article_aliases, article_aliases_li
                 start_previous_alias = m.start(1) + previous_end_index
                 positions.append((start_previous_alias, None, previous_text[m.start(1):m.end(1)], "alias_match"))
                 previous_text = previous_text[:m.start(1)] + "#" * len(previous_alias) + previous_text[m.end(1):]
-                indices.update(set([i for i in range(start_previous_alias, start_previous_alias + len(previous_alias))]))
+                indices.update(
+                    set([i for i in range(start_previous_alias, start_previous_alias + len(previous_alias))]))
                 if len(indices) == len_previous_indices:
                     break
                 len_previous_indices = len(indices)
@@ -528,9 +539,9 @@ def find_positions_of_aliases(previous_text, article_aliases, article_aliases_li
                     article_aliases[redirect][entity] = 0
                 article_aliases[redirect][entity] = 1
 
-
         if sort:
             article_aliases_list.sort(key=lambda x: len(x[0]), reverse=True)
+
 
 def find_acronyms(acronyms, positions, indices, sentence):
     current_start = 0
@@ -566,7 +577,7 @@ def find_acronyms(acronyms, positions, indices, sentence):
 
                 start = start_idx
                 if len(indices.intersection(set([j for j in range(start, start + len(actual_entity))]))) == 0:
-                    positions.append((start,None,actual_entity,"acronym_entity"))
+                    positions.append((start, None, actual_entity, "acronym_entity"))
                     indices.update(set([i for i in range(start, start + len(actual_entity))]))
 
                 start = acronym_start
@@ -581,14 +592,15 @@ def find_acronyms(acronyms, positions, indices, sentence):
             break
 
 
-def find_positions_of_all_links_with_regex(acronyms, text, aliases_reverse, redirects_reverse, redirects, article_aliases, article_aliases_list, seen_entities, seen_entities_split):
+def find_positions_of_all_links_with_regex(acronyms, text, aliases_reverse, redirects_reverse, redirects,
+                                           article_aliases, article_aliases_list, seen_entities, seen_entities_split):
     positions = []
     indices = set()
     line_entities = set()
 
     previous_end_index = 0
     while True:
-        match = re.search(RE_LINKS,text[previous_end_index:])
+        match = re.search(RE_LINKS, text[previous_end_index:])
         if match:
             start = match.start() + previous_end_index
             end = match.end() + previous_end_index
@@ -604,10 +616,12 @@ def find_positions_of_all_links_with_regex(acronyms, text, aliases_reverse, redi
 
             text = text[:start] + alias + text[end:]
             if entity in aliases_reverse and '#' not in entity:
-                positions.append((start,entity,alias,"annotation"))
+                positions.append((start, entity, alias, "annotation"))
 
                 previous_text = text[previous_end_index:start]
-                find_positions_of_aliases(previous_text, article_aliases, article_aliases_list, previous_end_index, positions, indices, aliases_reverse, redirects_reverse, seen_entities, seen_entities_split, entity=entity)
+                find_positions_of_aliases(previous_text, article_aliases, article_aliases_list, previous_end_index,
+                                          positions, indices, aliases_reverse, redirects_reverse, seen_entities,
+                                          seen_entities_split, entity=entity)
 
                 previous_end_index = start + len(alias)
                 indices.update(set([i for i in range(start, start + len(alias))]))
@@ -615,19 +629,19 @@ def find_positions_of_all_links_with_regex(acronyms, text, aliases_reverse, redi
         else:
             break
 
-
-
     previous_text = text[previous_end_index:]
-    find_positions_of_aliases(previous_text, article_aliases, article_aliases_list, previous_end_index, positions,indices, aliases_reverse, redirects_reverse, seen_entities, seen_entities_split)
+    find_positions_of_aliases(previous_text, article_aliases, article_aliases_list, previous_end_index, positions,
+                              indices, aliases_reverse, redirects_reverse, seen_entities, seen_entities_split)
 
     find_acronyms(acronyms, positions, indices, text)
 
     return text, positions, indices, line_entities
 
+
 def find_entities(text, redirects, aliases, title2Id=None, title_id=-1, links=None):
     idx = 0
     while True:
-        match = re.search(RE_LINKS,text[idx:])
+        match = re.search(RE_LINKS, text[idx:])
         if match:
             entity = match.group(1)
             if '[[' not in entity:
@@ -645,11 +659,13 @@ def find_entities(text, redirects, aliases, title2Id=None, title_id=-1, links=No
         else:
             break
 
+
 def remove_irrelevant_sections(text):
     match = re.search(RE_REMOVE_SECTIONS, text)
     if match:
         text = text[:match.span()[0]]
     return text
+
 
 def remove_tables(text):
     while True:
@@ -668,13 +684,14 @@ def remove_tables(text):
 
     return text
 
+
 def remove_files(text):
     while True:
         match = re.search(RE_FILES, text)
         if match:
             start = match.span()[0]
             end = match.span()[1]
-            if '[[' in text[start+2:end]:
+            if '[[' in text[start + 2:end]:
                 # in this case we need to figure out where the annotation ends. The regex cannot figure that out.
                 t = text[start:]
                 annotation_start = start
@@ -697,7 +714,7 @@ def remove_files(text):
                         idx += open + 2
                     elif close > -1:
                         close_brackets += 1
-                        idx  += close + 2
+                        idx += close + 2
                     else:
                         break
 
@@ -716,10 +733,8 @@ def remove_files(text):
 
     return text
 
+
 def clean_text(text):
-    text = text.replace('{{snd}}', ' - ')
-    text = text.replace('&ndash;', ' - ')
-    text = text.replace('&mdash;', ' - ')
     text = text.replace('&nbsp;', ' ')
     text = re.sub(RE_COMMENTS, '', text)
     text = re.sub(RE_FOOTNOTES, '', text)
@@ -769,7 +784,7 @@ if (__name__ == "__main__"):
         with open(filename) as f:
             text = f.read()
 
-            pos_infobox = text.find('{{Infobox')
+            pos_infobox = text.find('{{' + INFOBOX)
             if pos_infobox > -1:
                 text = text[pos_infobox:]
 

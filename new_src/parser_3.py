@@ -4,9 +4,11 @@ import json
 import multiprocessing
 import time
 import datetime
-from utils import IGNORED_NAMESPACES, create_file_name_and_directory, jsonKeys2int, find_positions_of_all_links_with_regex, create_filename
+from utils import create_file_name_and_directory, jsonKeys2int, find_positions_of_all_links_with_regex, create_filename
 
 from stanza.server import CoreNLPClient, StartServer
+
+from language_specifics import IGNORED_NAMESPACES
 
 ARTICLE_OUTPUTPATH = "articles_3"
 
@@ -251,9 +253,7 @@ def process_article(text,
             line = line[:sentence_breaks[i]] + '\n' + line[sentence_breaks[i]:].strip()
         
         complete_content += '\n' + line
-    
-    
-    
+
     filename = create_file_name_and_directory(title, outputpath + ARTICLE_OUTPUTPATH + '/')
     with open(filename, 'w') as f:
         f.write(complete_content.strip())
@@ -288,7 +288,7 @@ def process_articles(process_index,
         properties=props,
         timeout=60000, endpoint="http://localhost:9000", start_server=StartServer.DONT_START, memory='16g')
 
-    logger = open(logging_path + "process_" + str(process_index) + "_logger.txt",'w')
+    logger = open(logging_path + "process_" + str(process_index) + "_logger.txt", 'w')
 
     for i in range(len(filenames)):
         if i % num_processes == process_index:
@@ -298,8 +298,6 @@ def process_articles(process_index,
             #try:
             if title in title2Id:
                 title_id = title2Id[title]
-
-
 
                 new_filename, _, _, _ = create_filename(title, outputpath + ARTICLE_OUTPUTPATH + '/')
                 new_filename2title[new_filename] = title
@@ -323,7 +321,6 @@ def process_articles(process_index,
                                         links,use_entity_linker,
                                         client, props, annotators)
 
-
                     logger.write("File done: " + new_filename + "\n")
                 else:
                     logger.write("File exists: " + new_filename + "\n")
@@ -336,7 +333,6 @@ def process_articles(process_index,
             #except Exception as e:
             #    print(e)
             #    pass
-
 
     print("Process " + str(process_index) + ', articles processed: ' + str(counter_all))
 

@@ -3,5 +3,6 @@
     "outputpath":"/media/michi/Data/wexea/new/",
     "logging_path": "",
     "processes": 6,
-    "neural_el_model": "/media/michi/Data/non_essential_repos/neural-el/neural-el_resources/models/C_newstuff222.model.data-00000-of-00001"
+    "neural_el_model": "/media/michi/Data/non_essential_repos/neural-el/neural-el_resources/models/C_newstuff222.model.data-00000-of-00001",
+    "language_file": ""
 }

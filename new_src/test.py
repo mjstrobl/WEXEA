@@ -1,5 +1,5 @@
 import json
-from utils import IGNORED_NAMESPACES, is_upper
+from utils import is_upper
 
 
 config = json.load(open('../config/config.json'))

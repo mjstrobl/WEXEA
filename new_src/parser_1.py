@@ -4,12 +4,14 @@ import os
 import json
 import time
 import datetime
-from utils import current_milli_time, RE_LINKS, IGNORED_NAMESPACES, create_file_name_and_directory, RE_CATEGORY_REDIRECT
+from utils import current_milli_time, RE_LINKS, create_file_name_and_directory
+
+from language_specifics import RE_CATEGORY_REDIRECT, IGNORED_NAMESPACES, CATEGORY, LIST, REDIRECT
 
 ARTICLE_OUTPUTPATH = "articles_1"
 
 class WikiHandler(xml.sax.ContentHandler):
-    def __init__(self,title2Id,redirects,filename2title, categories, category_redirects, category2title, listof2title, list_redirects, outputpath,categorypath, listof_path):
+    def __init__(self, title2Id,redirects,filename2title, categories, category_redirects, category2title, listof2title, list_redirects, outputpath,categorypath, listof_path):
         self.tag = ""
         self.content = ''
         self.title = ''
@@ -50,17 +52,17 @@ class WikiHandler(xml.sax.ContentHandler):
                     print('Pages processed: ' + str(self.counter_all) + ', avg t: ' + str(diff / self.counter_all), end='\r')
         elif tag == 'text':
             self.n += 1
-            if self.title.lower().startswith("category:"):
+            if self.title.lower().startswith(CATEGORY):
                 self.processCategory()
-            elif self.title.lower().startswith('list of '):
+            elif self.title.lower().startswith(LIST):
                 self.processListOf()
             elif not any(self.title.lower().startswith(ignore + ':') for ignore in IGNORED_NAMESPACES):
                 self.processArticle()
         elif tag == 'redirect' and 'title' in self.attributes:
             redirect = self.attributes['title']
-            if redirect.lower().startswith('list of') or self.title.lower().startswith('list of'):
+            if redirect.lower().startswith(LIST) or self.title.lower().startswith(LIST):
                 self.list_redirects[self.title] = redirect
-            elif redirect.lower().startswith('category:') or self.title.lower().startswith('category:'):
+            elif redirect.lower().startswith(CATEGORY) or self.title.lower().startswith(CATEGORY):
                 self.category_redirects[self.title] = redirect
             elif not any(self.title.lower().startswith(ignore + ':') for ignore in IGNORED_NAMESPACES) and not any(redirect.lower().startswith(ignore + ':') for ignore in IGNORED_NAMESPACES):
                 self.redirects[self.title] = redirect
@@ -80,7 +82,7 @@ class WikiHandler(xml.sax.ContentHandler):
                 pos_bar = redirect.find('|')
                 if pos_bar > -1:
                     redirect = redirect[:pos_bar]
-                redirect = redirect.replace('_',' ')
+                redirect = redirect.replace('_', ' ')
                 self.category_redirects[self.title] = redirect
         else:
             matches = re.findall(RE_CATEGORY_REDIRECT, text)
@@ -99,8 +101,8 @@ class WikiHandler(xml.sax.ContentHandler):
                     return
             else:
                 for match in matches:
-                    if not match.lower().startswith("category:"):
-                        match = "Category:" + match
+                    if not match.lower().startswith(CATEGORY):
+                        match = CATEGORY + match
                     self.category_redirects[match] = self.title
 
     def processListOf(self):
@@ -137,8 +139,8 @@ class WikiHandler(xml.sax.ContentHandler):
                 pos_bar = redirect.find('|')
                 if pos_bar > -1:
                     redirect = redirect[:pos_bar]
-                redirect = redirect.replace('_',' ')
-                if not any(redirect.lower().startswith(ignore + ':') for ignore in IGNORED_NAMESPACES) and not redirect.lower().startswith('list of'):
+                redirect = redirect.replace('_', ' ')
+                if not any(redirect.lower().startswith(ignore + ':') for ignore in IGNORED_NAMESPACES) and not redirect.lower().startswith(LIST):
                     self.redirects[self.title] = redirect
         else:
             # Store article as separate file
@@ -159,13 +161,13 @@ class WikiHandler(xml.sax.ContentHandler):
             # Look for more redirects in article text
             lines = text.split('\n')
             for line in lines:
-                if not line.startswith('{{redirect|'):
+                if not line.startswith('{{' + REDIRECT + '|'):
                     break
                 else:
                     line = line[11:]
                     line = line[:line.find('|')]
                     if len(line) > 0:
-                        if not any(line.lower().startswith(ignore + ':') for ignore in IGNORED_NAMESPACES) and not line.lower().startswith('list of'):
+                        if not any(line.lower().startswith(ignore + ':') for ignore in IGNORED_NAMESPACES) and not line.lower().startswith(LIST):
                             self.redirects[line] = self.title
 
 if (__name__ == "__main__"):

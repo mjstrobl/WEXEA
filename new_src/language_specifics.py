@@ -79,7 +79,7 @@ GERMAN
 '''
 CATEGORY = "kategorie"
 LIST = "liste "
-REDIRECT = "weiterleitungshinweis"
+REDIRECT = "weiterleitung"
 FILE = 'datei'
 IMAGE = 'bild'
 TEMPLATE_QUOTE = 'zitat'

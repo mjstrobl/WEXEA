@@ -75,7 +75,7 @@ class WikiHandler(xml.sax.ContentHandler):
 
     def processCategory(self):
         text = self.content.strip()
-        if text.lower().startswith('#redirect'):
+        if text.lower().startswith('#' + REDIRECT):
             match = re.search(RE_LINKS,text)
             if match:
                 redirect = match.group(1).strip()
@@ -107,7 +107,7 @@ class WikiHandler(xml.sax.ContentHandler):
 
     def processListOf(self):
         text = self.content.strip()
-        if text.lower().startswith('#redirect'):
+        if text.lower().startswith('#' + REDIRECT):
             match = re.search(RE_LINKS,text)
             if match:
                 redirect = match.group(1).strip()
@@ -132,7 +132,7 @@ class WikiHandler(xml.sax.ContentHandler):
 
     def processArticle(self):
         text = self.content.strip()
-        if text.lower().startswith('#redirect'):
+        if text.lower().startswith('#' + REDIRECT):
             match = re.search(RE_LINKS,text)
             if match:
                 redirect = match.group(1).strip()

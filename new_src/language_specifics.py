@@ -4,7 +4,7 @@ import re
 '''
 ENGLISH
 '''
-'''
+
 CATEGORY = "category"
 LIST = "list of"
 REDIRECT = "redirect"
@@ -15,6 +15,7 @@ LANG = ['lang']
 AS_OF = 'as of'
 CONVERT = ['convert', 'cvt']
 TEMPLATE = 'template'
+TEMPLATE_QUOTE = 'quote'
 INFOBOX = 'infobox'
 DASH = ['{{spaced ndash}}', '{{dash}}', '{{snd}}', '{{spnd}}', '{{sndash}}', '{{spndash}}', '&ndash;', '&mdash;']
 RE_CATEGORIES = re.compile(r'\[\[Category:(.*?)\]\]', re.UNICODE)
@@ -35,10 +36,11 @@ RE_NUMBER_DISAMBIGUATIONS = '{{number disambiguation\||\|number disambiguation}}
 RE_STUB = 'stub}}'
 GIVEN_NAMES = '{{given name}}', '[[Category:Given names]]', '[[Category:Masculine given names]]', '[[Category:Feminine given names]]'
 SURNAMES = '{{surname}}', '[[Category:Surnames]]'
-'''
+
 
 '''
 FRENCH
+'''
 '''
 CATEGORY = "catégorie"
 LIST = "liste "
@@ -70,7 +72,7 @@ RE_NUMBER_DISAMBIGUATIONS = '{{number disambiguation\||\|number disambiguation}}
 RE_STUB = 'ébauche}}'
 GIVEN_NAMES = '{{prénom}}', '[[Catégorie:Prénom]]', '[[Catégorie:Prénom masculin]]', '[[Catégorie:Prénom féminin]]'
 SURNAMES = '{{patronymie}}', '[[Catégorie:Patronyme]]'
-
+'''
 
 '''
 GERMAN

@@ -211,7 +211,7 @@ def merge_links(partial_dict, dict):
                 dict[key][entity] = 0
             dict[key][entity] += partial_dict[key][entity]
 
-def merge_all_dictionaries(all_titles,title2Id):
+def merge_all_dictionaries(all_titles,title2Id, num_processes, dictionarypath):
     aliases = {}
     other_disambiguations = {}
     human_disambiguations = {}
@@ -503,5 +503,5 @@ if (__name__ == "__main__"):
     for filename in filename2title:
         all_titles.add(filename2title[filename])
 
-    merge_all_dictionaries(all_titles,title2Id)
+    merge_all_dictionaries(all_titles,title2Id, num_processes, dictionarypath)
 

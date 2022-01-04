@@ -24,7 +24,6 @@ def process_article(text,
                     disambiguations_human,
                     disambiguations_geo,
                     links,
-                    use_entity_linker,
                     client,
                     props,
                     annotators):
@@ -195,25 +194,25 @@ def process_article(text,
                                 entity = '###'.join(list(line_candidates))
 
 
-                            if not use_entity_linker:
+                            '''if not use_entity_linker:
                                 max_matches = 0
                                 for candidate in line_candidates:
                                     if candidates[candidate] > max_matches:
                                         max_matches = candidates[candidate]
                                         best_candidate = candidate
 
-                                entity = best_candidate
+                                entity = best_candidate'''
                         else:
                             new_tag = '_multiple_candidates'
-                            if not use_entity_linker:
+                            '''if not use_entity_linker:
                                 max_matches = 0
                                 for candidate in candidates:
                                     if candidates[candidate] > max_matches:
                                         max_matches = candidates[candidate]
                                         best_candidate = candidate
                                 entity = best_candidate
-                            else:
-                                entity = '###'.join(list(candidates.keys()))
+                            else:'''
+                            entity = '###'.join(list(candidates.keys()))
 
                         tag_to_print += new_tag
                 elif alias in disambiguations_human:
@@ -271,7 +270,7 @@ def process_articles(process_index,
                      persons,
                      disambiguations_human,
                      disambiguations_geo,
-                     links, use_entity_linker, logging_path):
+                     links, logging_path):
 
     start_time = time.time()
 
@@ -318,7 +317,7 @@ def process_articles(process_index,
                                         persons,
                                         disambiguations_human,
                                         disambiguations_geo,
-                                        links,use_entity_linker,
+                                        links,
                                         client, props, annotators)
 
                     logger.write("File done: " + new_filename + "\n")
@@ -345,6 +344,18 @@ def process_articles(process_index,
 
     logger.close()
 
+def merge_all_dictionaries(num_processes, dictionarypath):
+    filename2title = {}
+
+    for i in range(num_processes):
+        partial_filename2title = json.load(open(dictionarypath + str(i) + '_filename2title_3.json'))
+        for filename in partial_filename2title:
+            filename2title[filename] = partial_filename2title[filename]
+
+    with open(dictionarypath + 'filename2title_3.json', 'w') as f:
+        json.dump(filename2title, f)
+
+
 if (__name__ == "__main__"):
     config = json.load(open('config/config.json'))
     num_processes = config['processes']
@@ -355,11 +366,10 @@ if (__name__ == "__main__"):
     articlepath = outputpath + ARTICLE_OUTPUTPATH + '/'
     try:
         mode = 0o755
+        os.mkdir(logging_path, mode)
         os.mkdir(articlepath, mode)
     except OSError:
         print("directories exist already")
-
-    use_entity_linker = True
 
     redirects = json.load(open(dictionarypath + 'redirects_pruned.json'))
     persons = set(json.load(open('data/persons.json')))
@@ -390,7 +400,7 @@ if (__name__ == "__main__"):
                                                                    persons,
                                                                    disambiguations_human,
                                                                    disambiguations_geo,
-                                                                   links, use_entity_linker,logging_path))
+                                                                   links,logging_path))
 
         jobs.append(p)
         p.start()
@@ -409,3 +419,5 @@ if (__name__ == "__main__"):
 
     for job in jobs:
         job.join()
+
+    merge_all_dictionaries(num_processes, dictionarypath)

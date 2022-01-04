@@ -6,8 +6,8 @@ import time
 import numpy as np
 #import utils
 #import Mention
-from src.entity_linker.readers import utils
-from src.entity_linker.readers.Mention import Mention
+from new_src.entity_linker.readers import utils
+from new_src.entity_linker.readers.Mention import Mention
 from nltk.tokenize import word_tokenize
 
 start_word = "<s>"

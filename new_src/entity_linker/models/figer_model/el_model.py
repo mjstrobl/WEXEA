@@ -8,12 +8,12 @@ import sys
 
 from tensorflow.core.protobuf import saver_pb2
 
-from src.entity_linker.evaluation import evaluate_inference, evaluate_types
-from src.entity_linker.models.base import Model
-from src.entity_linker.models.figer_model.context_encoder import ContextEncoderModel
-from src.entity_linker.models.figer_model.coherence_model import CoherenceModel
-from src.entity_linker.models.figer_model.labeling_model import LabelingModel
-from src.entity_linker.models.figer_model.entity_posterior import EntityPosterior
+from new_src.entity_linker.evaluation import evaluate_inference, evaluate_types
+from new_src.entity_linker.models.base import Model
+from new_src.entity_linker.models.figer_model.context_encoder import ContextEncoderModel
+from new_src.entity_linker.models.figer_model.coherence_model import CoherenceModel
+from new_src.entity_linker.models.figer_model.labeling_model import LabelingModel
+from new_src.entity_linker.models.figer_model.entity_posterior import EntityPosterior
 
 
 np.set_printoptions(precision=5)

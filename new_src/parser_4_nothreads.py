@@ -198,9 +198,7 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, rea
         f.write(complete_content.strip())
 
 
-def process_articles(process_index,
-                     num_processes,
-                     title2Id,
+def process_articles(title2Id,
                      filename2title,
                      filenames, logging_path, corefs, use_entity_linker, aliases_reverse, reader, model):
     start_time = time.time()
@@ -211,50 +209,47 @@ def process_articles(process_index,
 
     new_filename2title = {}
 
-    logger = open(logging_path + "process_" + str(process_index) + "_logger.txt", 'w')
+    logger = open(logging_path + "process_logger.txt", 'w')
 
     for i in range(len(filenames)):
-        if i % num_processes == process_index:
-            filename = filenames[i]
-            title = filename2title[filename]
-            # if title == "Queen Victoria" or title == "Wilhelm II, German Emperor" or title == 'Queen Victoria Park':
-            # try:
-            if title in title2Id:
-                title_id = title2Id[title]
+        filename = filenames[i]
+        title = filename2title[filename]
+        # if title == "Queen Victoria" or title == "Wilhelm II, German Emperor" or title == 'Queen Victoria Park':
+        # try:
+        if title in title2Id:
+            title_id = title2Id[title]
 
-                new_filename, _, _, _ = create_filename(title, outputpath + ARTICLE_OUTPUTPATH + '/')
-                new_filename2title[new_filename] = title
+            new_filename, _, _, _ = create_filename(title, outputpath + ARTICLE_OUTPUTPATH + '/')
+            new_filename2title[new_filename] = title
 
-                logger.write("Start with file: " + new_filename + "\n")
+            logger.write("Start with file: " + new_filename + "\n")
 
-                if not os.path.isfile(new_filename):
-                    with open(filename) as f:
-                        text = f.read()
-                        process_article(text,
-                                        title,
-                                        corefs, use_entity_linker, aliases_reverse, reader, model)
+            if not os.path.isfile(new_filename):
+                with open(filename) as f:
+                    text = f.read()
+                    process_article(text,
+                                    title,
+                                    corefs, use_entity_linker, aliases_reverse, reader, model)
 
-                    logger.write("File done: " + new_filename + "\n")
-                else:
-                    logger.write("File exists: " + new_filename + "\n")
+                logger.write("File done: " + new_filename + "\n")
+            else:
+                logger.write("File exists: " + new_filename + "\n")
 
-                counter_all += 1
-                if process_index == 0:
-                    time_per_article = (time.time() - start_time) / counter_all
-                    print("Process " + str(process_index) + ', articles: ' + str(counter_all) + ", avg time: " +
-                          str(time_per_article), end='\r')
-            # except Exception as e:
-            #    print(e)
-            #    pass
+            counter_all += 1
+            time_per_article = (time.time() - start_time) / counter_all
+            print("articles: " + str(counter_all) + ", avg time: " + str(time_per_article), end='\r')
+        # except Exception as e:
+        #    print(e)
+        #    pass
 
-    print("Process " + str(process_index) + ', articles processed: ' + str(counter_all))
+    print("articles processed: " + str(counter_all))
 
-    with open(dictionarypath + str(process_index) + '_filename2title_final.json', 'w') as f:
+    with open(dictionarypath + 'filename2title_final.json', 'w') as f:
         json.dump(new_filename2title, f)
 
     end_time = time.time()
     elapsed_time = end_time - start_time
-    print("Process " + str(process_index) + ", elapsed time: %s" % str(datetime.timedelta(seconds=elapsed_time)))
+    print("elapsed time: %s" % str(datetime.timedelta(seconds=elapsed_time)))
 
     logger.close()
 
@@ -381,21 +376,4 @@ if (__name__ == "__main__"):
 
         tf.compat.v1.get_default_graph().finalize()
 
-
-        jobs = []
-        for i in range(num_processes):
-            p = multiprocessing.Process(target=process_articles, args=(i,
-                                                                       num_processes,
-                                                                       title2Id,
-                                                                       filename2title,
-                                                                       filenames, logging_path, corefs, use_entity_linker, aliases_reverse, reader, model))
-
-            jobs.append(p)
-            p.start()
-
-        del title2Id
-        del filename2title
-        del filenames
-
-        for job in jobs:
-            job.join()
+        process_articles(title2Id,filename2title,filenames, logging_path, corefs, use_entity_linker, aliases_reverse, reader, model)

@@ -4,7 +4,7 @@ Modifications copyright (C) 2020 Michael Strobl
 
 import tensorflow as tf
 
-from new_src.entity_linker.models.base import Model
+from entity_linker.models.base import Model
 class ContextEncoderModel(Model):
     """Run Forward and Backward LSTM and concatenate last outputs to get
        context representation"""

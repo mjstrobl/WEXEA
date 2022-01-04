@@ -15,8 +15,8 @@ import unicodedata
 import configparser
 import collections
 import numpy as np
-import new_src.entity_linker.readers.utils as utils
-from new_src.entity_linker.readers.config import Config
+import entity_linker.readers.utils as utils
+from entity_linker.readers.config import Config
 
 class VocabLoader(object):
     def __init__(self, config):

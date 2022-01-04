@@ -197,91 +197,22 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, rea
     with open(filename, 'w') as f:
         f.write(complete_content.strip())
 
-
-def process_articles(process_index,
-                     num_processes,
-                     title2Id,
-                     filename2title,
-                     filenames, logging_path, corefs, use_entity_linker, aliases_reverse, reader, model):
-    start_time = time.time()
-
-    print('start processing')
-
-    counter_all = 0
-
-    new_filename2title = {}
-
-    logger = open(logging_path + "process_" + str(process_index) + "_logger.txt", 'w')
-
-    for i in range(len(filenames)):
-        if i % num_processes == process_index:
-            filename = filenames[i]
-            title = filename2title[filename]
-            # if title == "Queen Victoria" or title == "Wilhelm II, German Emperor" or title == 'Queen Victoria Park':
-            # try:
-            if title in title2Id:
-                title_id = title2Id[title]
-
-                new_filename, _, _, _ = create_filename(title, outputpath + ARTICLE_OUTPUTPATH + '/')
-                new_filename2title[new_filename] = title
-
-                logger.write("Start with file: " + new_filename + "\n")
-
-                if not os.path.isfile(new_filename):
-                    with open(filename) as f:
-                        text = f.read()
-                        process_article(text,
-                                        title,
-                                        corefs, use_entity_linker, aliases_reverse, reader, model)
-
-                    logger.write("File done: " + new_filename + "\n")
-                else:
-                    logger.write("File exists: " + new_filename + "\n")
-
-                counter_all += 1
-                if process_index == 0:
-                    time_per_article = (time.time() - start_time) / counter_all
-                    print("Process " + str(process_index) + ', articles: ' + str(counter_all) + ", avg time: " +
-                          str(time_per_article), end='\r')
-            # except Exception as e:
-            #    print(e)
-            #    pass
-
-    print("Process " + str(process_index) + ', articles processed: ' + str(counter_all))
-
-    with open(dictionarypath + str(process_index) + '_filename2title_final.json', 'w') as f:
-        json.dump(new_filename2title, f)
-
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print("Process " + str(process_index) + ", elapsed time: %s" % str(datetime.timedelta(seconds=elapsed_time)))
-
-    logger.close()
-
-
 if (__name__ == "__main__"):
-    config = json.load(open('config/config.json'))
+    config = json.load(open('../config/config.json'))
     num_processes = config['processes']
     wikipath = config['wikipath']
     outputpath = config['outputpath']
+
+    outputpath = outputpath.replace("new","alt")
+
     logging_path = config['logging_path']
     dictionarypath = outputpath + 'dictionaries/'
-    articlepath = outputpath + ARTICLE_OUTPUTPATH + '/'
-    try:
-        mode = 0o755
-        os.mkdir(articlepath, mode)
-    except OSError:
-        print("directories exist already")
 
-    title2Id = json.load(open(dictionarypath + 'title2Id_pruned.json'))
-    filename2title = json.load(open(dictionarypath + 'filename2title_3.json'))
-    filenames = list(filename2title.keys())
     aliases_reverse = json.load(open(dictionarypath + 'aliases_reverse.json'))
 
-    corefs = json.load(open('data/corefs.json'))
+    corefs = json.load(open('../data/corefs.json'))
     gender_detector = gender.Detector()
     use_entity_linker = True
-
 
     print("Read dictionaries.")
 
@@ -293,9 +224,7 @@ if (__name__ == "__main__"):
     tf.compat.v1.disable_eager_execution()
 
     checkpoint_dir = '/media/michi/Data/non_essential_repos/neural-el/neural-el_resources/models/CDTE.model'
-    checkpoint_dir = config['original_el_model']
-    #model_checkpoint_path = '/media/michi/Data/non_essential_repos/neural-el/neural-el_resources/models/CDTE_newstuff222.model'
-    model_checkpoint_path = config['neural_el_model']
+    model_checkpoint_path = '/media/michi/Data/non_essential_repos/neural-el/neural-el_resources/models/CDTE_newstuff222.model'
     replace_from = 'RNN/MultiRNNCell/Cell0/BasicLSTMCell'
     # 'rnn/multirnncell/cell0/basiclstmcell'
     replace_to = 'rnn/multi_rnn_cell/cell_0/basic_lstm_cell'
@@ -332,9 +261,9 @@ if (__name__ == "__main__"):
     tf.compat.v1.reset_default_graph()
 
     with tf.compat.v1.Session() as sess:
-        config_el = Config('new_src/entity_linker/configs/config.ini', verbose=False)
-        vocabloader = VocabLoader(config_el)
-        reader = InferenceReader(config=config_el,
+        config = Config('entity_linker/configs/config.ini', verbose=False)
+        vocabloader = VocabLoader(config)
+        reader = InferenceReader(config=config,
                                  vocabloader=vocabloader,
                                  num_cands=30,
                                  batch_size=1,
@@ -344,6 +273,11 @@ if (__name__ == "__main__"):
 
         for op in tf.compat.v1.get_default_graph().get_operations():
             print(op.name)
+
+        print('####')
+        print('####')
+        print('####')
+        print('####')
 
         model = ELModel(
             sess=sess, reader=reader,
@@ -374,28 +308,14 @@ if (__name__ == "__main__"):
         for op in tf.compat.v1.get_default_graph().get_operations():
             print(op.name)
 
-        #model_checkpoint_path = '/media/michi/Data/non_essential_repos/neural-el/neural-el_resources/models/CDTE_newstuff222.model'
-        model_checkpoint_path = config['neural_el_model']
+        model_checkpoint_path = '/media/michi/Data/non_essential_repos/neural-el/neural-el_resources/models/CDTE_newstuff222.model'
         saver = tf.compat.v1.train.Saver()
         saver.restore(sess, model_checkpoint_path)
 
         tf.compat.v1.get_default_graph().finalize()
 
-
-        jobs = []
-        for i in range(num_processes):
-            p = multiprocessing.Process(target=process_articles, args=(i,
-                                                                       num_processes,
-                                                                       title2Id,
-                                                                       filename2title,
-                                                                       filenames, logging_path, corefs, use_entity_linker, aliases_reverse, reader, model))
-
-            jobs.append(p)
-            p.start()
-
-        del title2Id
-        del filename2title
-        del filenames
-
-        for job in jobs:
-            job.join()
+        with open("/media/michi/Data/wexea/alt/articles_3/q/qu/que/Queen_Victoria.txt") as f:
+            text = f.read()
+            process_article(text,
+                        "Queen Victoria",
+                        corefs, use_entity_linker, aliases_reverse, reader, model)

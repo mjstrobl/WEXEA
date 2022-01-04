@@ -6,7 +6,7 @@ import time
 import tensorflow as tf
 import numpy as np
 
-from new_src.entity_linker.models.base import Model
+from entity_linker.models.base import Model
 
 class EntityPosterior(Model):
     """Entity Embeddings and Posterior Calculation"""

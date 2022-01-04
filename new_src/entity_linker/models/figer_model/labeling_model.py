@@ -6,7 +6,7 @@ import time
 import tensorflow as tf
 import numpy as np
 
-from new_src.entity_linker.models.base import Model
+from entity_linker.models.base import Model
 
 class LabelingModel(Model):
     """Unsupervised Clustering using Discrete-State VAE"""

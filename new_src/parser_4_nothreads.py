@@ -48,6 +48,7 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, rea
                 parts = entity.split('|')
                 if len(parts) < 2:
                     print(entity)
+                    print(line)
                 alias = parts[-2]
 
 

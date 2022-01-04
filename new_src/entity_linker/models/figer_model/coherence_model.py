@@ -6,7 +6,7 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from new_src.entity_linker.models.base import Model
+from entity_linker.models.base import Model
 
 class CoherenceModel(Model):
     '''

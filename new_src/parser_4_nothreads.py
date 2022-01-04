@@ -46,7 +46,11 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, rea
                 end = match.end()
                 entity = match.group(1)
                 parts = entity.split('|')
+                if len(parts) < 2:
+                    print(entity)
                 alias = parts[-2]
+
+
 
                 if ("multiple" in parts[-1] or 'part_of_seen_entity' in parts[-1]) and '###' in parts[0]:
                     # use entity linker, which we will deal with later.

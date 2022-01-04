@@ -39,6 +39,7 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, rea
         el_idxs = []
         found_some_corefs = False
         previous_end = 0
+        ignore_line = False
         while True:
             match = re.search(RE_LINKS, line)
             if match:
@@ -47,8 +48,8 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, rea
                 entity = match.group(1)
                 parts = entity.split('|')
                 if len(parts) < 2:
-                    print(entity)
-                    print(line)
+                    ignore_line = True
+                    break
                 alias = parts[-2]
 
 
@@ -128,6 +129,8 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, rea
                 break
 
 
+        if ignore_line:
+            continue
 
         # disambiguate here!
         if len(el_idxs) > 0:

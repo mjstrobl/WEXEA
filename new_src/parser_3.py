@@ -192,26 +192,8 @@ def process_article(text,
                             else:
                                 new_tag = '_multiple_line_candidates'
                                 entity = '###'.join(list(line_candidates))
-
-
-                            '''if not use_entity_linker:
-                                max_matches = 0
-                                for candidate in line_candidates:
-                                    if candidates[candidate] > max_matches:
-                                        max_matches = candidates[candidate]
-                                        best_candidate = candidate
-
-                                entity = best_candidate'''
                         else:
                             new_tag = '_multiple_candidates'
-                            '''if not use_entity_linker:
-                                max_matches = 0
-                                for candidate in candidates:
-                                    if candidates[candidate] > max_matches:
-                                        max_matches = candidates[candidate]
-                                        best_candidate = candidate
-                                entity = best_candidate
-                            else:'''
                             entity = '###'.join(list(candidates.keys()))
 
                         tag_to_print += new_tag
@@ -270,7 +252,7 @@ def process_articles(process_index,
                      persons,
                      disambiguations_human,
                      disambiguations_geo,
-                     links, logging_path):
+                     links, logging_path, language):
 
     start_time = time.time()
 
@@ -280,7 +262,21 @@ def process_articles(process_index,
 
     new_filename2title = {}
 
-    props = {"ner.applyFineGrained": False, "ner.model": "edu/stanford/nlp/models/ner/english.muc.7class.distsim.crf.ser.gz"}
+    if language == 'de':
+        props = {"tokenize.language": "de", "pos.model": "edu/stanford/nlp/models/pos-tagger/german-ud.tagger",
+                 "tokenize.postProcessor": "edu.stanford.nlp.international.german.process.GermanTokenizerPostProcessor",
+                 "ner.applyFineGrained": False,
+                 "ner.model": "edu/stanford/nlp/models/ner/german.distsim.crf.ser.gz",
+                 "ner.applyNumericClassifiers": False, "ner.useSUTime": False
+                 }
+    elif language == 'fr':
+        props = {"tokenize.language": "fr", "pos.model": "edu/stanford/nlp/models/pos-tagger/french-ud.tagger",
+                 "ner.applyFineGrained": False, "ner.model": "edu/stanford/nlp/models/ner/french-wikiner-4class.crf.ser.gz",
+                 "ner.applyNumericClassifiers": False, "ner.useSUTime": False
+        }
+    else:
+        props = {"ner.applyFineGrained": False, "ner.model": "edu/stanford/nlp/models/ner/english.muc.7class.distsim.crf.ser.gz"}
+
     annotators = ['tokenize', 'ssplit', 'pos', 'lemma', 'ner']
     client = CoreNLPClient(
         annotators=annotators,
@@ -371,6 +367,12 @@ if (__name__ == "__main__"):
     except OSError:
         print("directories exist already")
 
+    language = 'en'
+    if 'language' in config:
+        language = config['language']
+
+    print("LANGUAGE: " + language)
+
     redirects = json.load(open(dictionarypath + 'redirects_pruned.json'))
     persons = set(json.load(open('data/persons.json')))
     redirects_reverse = json.load(open(dictionarypath + 'redirects_reverse.json'))
@@ -400,7 +402,7 @@ if (__name__ == "__main__"):
                                                                    persons,
                                                                    disambiguations_human,
                                                                    disambiguations_geo,
-                                                                   links,logging_path))
+                                                                   links,logging_path,language))
 
         jobs.append(p)
         p.start()

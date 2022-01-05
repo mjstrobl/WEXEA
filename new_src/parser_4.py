@@ -13,9 +13,7 @@ import tensorflow as tf
 
 ARTICLE_OUTPUTPATH = "articles_final"
 
-coref_assignments = {'he': 'male', 'his': 'male', 'him': 'male', 'himself': 'male', 'she': 'female', 'her': 'female', 'herself': 'female'}
-
-def process_article(text, title, corefs, use_entity_linker, aliases_reverse, reader, model):
+def process_article(text, title, corefs, use_entity_linker, aliases_reverse, coref_assignments, reader, model):
 
     current_corefs = {}
     complete_content = ''
@@ -220,8 +218,7 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, rea
         f.write(complete_content.strip())
 
 
-def process_articles(filename2title,
-                     filenames, logging_path, corefs, use_entity_linker, aliases_reverse, reader, model):
+def process_articles(filename2title,filenames, logging_path, corefs, use_entity_linker, aliases_reverse, coref_assignments, reader, model):
     start_time = time.time()
 
     print('start processing')
@@ -243,9 +240,7 @@ def process_articles(filename2title,
         if not os.path.isfile(new_filename):
             with open(filename) as f:
                 text = f.read()
-                process_article(text,
-                                title,
-                                corefs, use_entity_linker, aliases_reverse, reader, model)
+                process_article(text,title,corefs, use_entity_linker, aliases_reverse, coref_assignments, reader, model)
 
             logger.write("File done: " + new_filename + "\n")
         else:
@@ -282,99 +277,116 @@ if (__name__ == "__main__"):
     except OSError:
         print("directories exist already")
 
+    language = 'en'
+    if 'language' in config:
+        language = config['language']
+
+    print("LANGUAGE: " + language)
+
+    if language == 'de':
+        coref_assignments = {'er': 'male', 'ihn': 'male', 'ihm': 'male', 'sein': 'male', 'seine': 'male', 'seiner': 'male', 'seinem': 'male', 'seinen': 'male', 'seines': 'male',
+                             'sie': 'female', 'ihr': 'female', 'ihre': 'female', 'ihrem': 'female', 'ihres': 'female', 'ihrer': 'female'}
+    elif language == 'fr':
+        coref_assignments = {'il': 'male', 'lui': 'male', 'elle': 'female'}
+    else:
+        coref_assignments = {'he': 'male', 'his': 'male', 'him': 'male', 'himself': 'male', 'she': 'female', 'her': 'female', 'herself': 'female'}
+
     filename2title = json.load(open(dictionarypath + 'filename2title_3.json'))
     filenames = list(filename2title.keys())
     aliases_reverse = json.load(open(dictionarypath + 'aliases_reverse.json'))
 
     corefs = json.load(open('data/corefs.json'))
     gender_detector = gender.Detector()
-    use_entity_linker = True
+    use_entity_linker = False
 
     print("Read dictionaries.")
 
-    config_proto = tf.compat.v1.ConfigProto()
-    config_proto.allow_soft_placement = True
-    config_proto.gpu_options.allow_growth = True
+    reader = None
+    model = None
+    if use_entity_linker:
+        config_proto = tf.compat.v1.ConfigProto()
+        config_proto.allow_soft_placement = True
+        config_proto.gpu_options.allow_growth = True
 
-    tf.compat.v1.disable_eager_execution()
+        tf.compat.v1.disable_eager_execution()
 
-    checkpoint_dir = config['original_el_model']
-    model_checkpoint_path = config['neural_el_model']
-    replace_from = 'RNN/MultiRNNCell/Cell0/BasicLSTMCell'
-    replace_to = 'rnn/multi_rnn_cell/cell_0/basic_lstm_cell'
-    add_prefix = None
-    state_dict = {}
-    with tf.compat.v1.Session() as sess:
-        # with sess.as_default():
-
-        checkpoint = tf.train.get_checkpoint_state(checkpoint_dir)
-        for var_name, _ in tf.train.list_variables(checkpoint_dir):
-            # Load the variable
-            var = tf.train.load_variable(checkpoint_dir, var_name)
-
-            # Set the new name
-            new_name = var_name
-            if None not in [replace_from, replace_to]:
-                new_name = new_name.replace(replace_from, replace_to)
-                new_name = new_name.lower()
-                new_name = new_name.replace('linear/matrix', 'kernel')
-                new_name = new_name.replace('linear/bias', 'bias')
-            if add_prefix:
-                new_name = add_prefix + new_name
-
-            if new_name != var_name:
-                print('Renaming %s to %s.' % (var_name, new_name))
-            var = tf.Variable(var, name=new_name)
-
-        # Save the variables
-        saver = tf.compat.v1.train.Saver()
-        sess.run(tf.compat.v1.global_variables_initializer())
-        saver.save(sess, model_checkpoint_path)
-
-    tf.compat.v1.reset_default_graph()
-
-    with tf.compat.v1.Session() as sess:
-        config_el = Config('new_src/entity_linker/configs/config.ini', verbose=False)
-        vocabloader = VocabLoader(config_el)
-        reader = InferenceReader(config=config_el,
-                                 vocabloader=vocabloader,
-                                 num_cands=30,
-                                 batch_size=1,
-                                 strict_context=False,
-                                 pretrain_wordembed=True,
-                                 coherence=True)
-
-        model = ELModel(
-            sess=sess, reader=reader,
-            max_steps=32000,
-            pretrain_max_steps=32000,
-            word_embed_dim=300,
-            context_encoded_dim=100,
-            context_encoder_num_layers=1,
-            context_encoder_lstmsize=100,
-            coherence_numlayers=1,
-            jointff_numlayers=1,
-            learning_rate=0.005,
-            dropout_keep_prob=1.0,
-            reg_constant=0.00,
-            checkpoint_dir="/tmp",
-            optimizer='adam',
-            strict=False,
-            pretrain_word_embed=True,
-            typing=True,
-            el=True,
-            coherence=True,
-            textcontext=True,
-            WDLength=100,
-            Fsize=5,
-            entyping=False)
-
-        model_var_dict = {}
-
+        checkpoint_dir = config['original_el_model']
         model_checkpoint_path = config['neural_el_model']
-        saver = tf.compat.v1.train.Saver()
-        saver.restore(sess, model_checkpoint_path)
+        replace_from = 'RNN/MultiRNNCell/Cell0/BasicLSTMCell'
+        replace_to = 'rnn/multi_rnn_cell/cell_0/basic_lstm_cell'
+        add_prefix = None
+        state_dict = {}
+        with tf.compat.v1.Session() as sess:
+            # with sess.as_default():
 
-        tf.compat.v1.get_default_graph().finalize()
+            checkpoint = tf.train.get_checkpoint_state(checkpoint_dir)
+            for var_name, _ in tf.train.list_variables(checkpoint_dir):
+                # Load the variable
+                var = tf.train.load_variable(checkpoint_dir, var_name)
 
-        process_articles(filename2title,filenames, logging_path, corefs, use_entity_linker, aliases_reverse, reader, model)
+                # Set the new name
+                new_name = var_name
+                if None not in [replace_from, replace_to]:
+                    new_name = new_name.replace(replace_from, replace_to)
+                    new_name = new_name.lower()
+                    new_name = new_name.replace('linear/matrix', 'kernel')
+                    new_name = new_name.replace('linear/bias', 'bias')
+                if add_prefix:
+                    new_name = add_prefix + new_name
+
+                if new_name != var_name:
+                    print('Renaming %s to %s.' % (var_name, new_name))
+                var = tf.Variable(var, name=new_name)
+
+            # Save the variables
+            saver = tf.compat.v1.train.Saver()
+            sess.run(tf.compat.v1.global_variables_initializer())
+            saver.save(sess, model_checkpoint_path)
+
+        tf.compat.v1.reset_default_graph()
+
+        with tf.compat.v1.Session() as sess:
+            config_el = Config('new_src/entity_linker/configs/config.ini', verbose=False)
+            vocabloader = VocabLoader(config_el)
+            reader = InferenceReader(config=config_el,
+                                     vocabloader=vocabloader,
+                                     num_cands=30,
+                                     batch_size=1,
+                                     strict_context=False,
+                                     pretrain_wordembed=True,
+                                     coherence=True)
+
+            model = ELModel(
+                sess=sess, reader=reader,
+                max_steps=32000,
+                pretrain_max_steps=32000,
+                word_embed_dim=300,
+                context_encoded_dim=100,
+                context_encoder_num_layers=1,
+                context_encoder_lstmsize=100,
+                coherence_numlayers=1,
+                jointff_numlayers=1,
+                learning_rate=0.005,
+                dropout_keep_prob=1.0,
+                reg_constant=0.00,
+                checkpoint_dir="/tmp",
+                optimizer='adam',
+                strict=False,
+                pretrain_word_embed=True,
+                typing=True,
+                el=True,
+                coherence=True,
+                textcontext=True,
+                WDLength=100,
+                Fsize=5,
+                entyping=False)
+
+            model_var_dict = {}
+
+            model_checkpoint_path = config['neural_el_model']
+            saver = tf.compat.v1.train.Saver()
+            saver.restore(sess, model_checkpoint_path)
+
+            tf.compat.v1.get_default_graph().finalize()
+
+    process_articles(filename2title,filenames, logging_path, corefs, use_entity_linker, aliases_reverse, coref_assignments, reader, model)

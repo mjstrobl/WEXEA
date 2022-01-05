@@ -55,18 +55,8 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, rea
 
 
                 if ("multiple" in parts[-1] or 'part_of_seen_entity' in parts[-1]) and '###' in parts[0]:
-                    # use entity linker, which we will deal with later.
-                    if not use_entity_linker:
-                        max_matches = 0
-                        candidates = parts[0].split('###')
-                        for candidate in candidates:
-                            if candidate in aliases_reverse and alias in aliases_reverse[candidate] and aliases_reverse[candidate][alias] > max_matches:
-                                max_matches = aliases_reverse[candidate][alias]
-                                best_candidate = candidate
-                        entity = best_candidate
-                        parts = [entity, alias, parts[-1]]
-                    else:
-                        el_idxs.append(len(positions))
+                    # use entity linker, which we will deal with later
+                    el_idxs.append(len(positions))
                 elif 'PERSON' in parts[-1] and parts[0].lower() in coref_assignments and coref_assignments[parts[0].lower()] in current_corefs:
                     # found a coref of a person
                     parts = [current_corefs[coref_assignments[parts[0].lower()]], alias, 'PERSON_coref']
@@ -136,55 +126,84 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, rea
         if len(el_idxs) > 0:
             el_text = line
 
-            for i in reversed(range(len(el_idxs))):
-                position = positions[el_idxs[i]]
-                start = position[0]
-                length = position[1]
-                parts = position[2]
+            disambiguated = False
+            if use_entity_linker:
+                try:
+                    for i in reversed(range(len(el_idxs))):
+                        position = positions[el_idxs[i]]
+                        start = position[0]
+                        length = position[1]
+                        parts = position[2]
 
-                el_text = el_text[:start] + '[[' + '|'.join(parts) + ']]' + el_text[start+length:]
+                        el_text = el_text[:start] + '[[' + '|'.join(parts) + ']]' + el_text[start+length:]
 
-            reader.loadTestDoc(el_text)
+                    reader.loadTestDoc(el_text)
 
-            mentions = reader.mentions
+                    mentions = reader.mentions
 
-            if reader.disambiguations_counter > 0:
-                # print(reader.disambiguations_counter)
-                (predTypScNPmat_list,
-                 widIdxs_list,
-                 priorProbs_list,
-                 textProbs_list,
-                 jointProbs_list,
-                 evWTs_list,
-                 pred_TypeSetsList) = model.doInference()
+                    if reader.disambiguations_counter > 0:
+                        # print(reader.disambiguations_counter)
+                        (predTypScNPmat_list,
+                         widIdxs_list,
+                         priorProbs_list,
+                         textProbs_list,
+                         jointProbs_list,
+                         evWTs_list,
+                         pred_TypeSetsList) = model.doInference()
 
-            new_mentions = {}
-            mentionnum = 0
-            for i in range(len(mentions)):
-                mention = mentions[i]
-                alias = mention.surface
-                mention_start = mention.char_start
-                mention_length = mention.link_len
-                sent_idx = mention.sentence_idx
-                mention_type = mention.type
+                    new_mentions = {}
+                    mentionnum = 0
+                    for i in range(len(mentions)):
+                        mention = mentions[i]
+                        alias = mention.surface
+                        mention_start = mention.char_start
+                        mention_length = mention.link_len
+                        sent_idx = mention.sentence_idx
+                        mention_type = mention.type
 
-                if sent_idx not in new_mentions:
-                    new_mentions[sent_idx] = []
+                        if sent_idx not in new_mentions:
+                            new_mentions[sent_idx] = []
 
-                if i in reader.disambiguations and len(mention.entities) > 1:
+                        if i in reader.disambiguations and len(mention.entities) > 1:
 
-                    [evWTs, evWIDS, evProbs] = evWTs_list[mentionnum]
-                    disambiguation = mention.wikititles[evWIDS[2]]
-                    entity = disambiguation
-                    mentionnum += 1
-                else:
-                    entity = mention.entities[0]
+                            [evWTs, evWIDS, evProbs] = evWTs_list[mentionnum]
+                            disambiguation = mention.wikititles[evWIDS[2]]
+                            entity = disambiguation
+                            mentionnum += 1
+                        else:
+                            entity = mention.entities[0]
 
-                position = positions[el_idxs[i]]
-                start = position[0]
-                length = position[1]
-                parts = position[2]
-                positions[el_idxs[i]] = (start, length, [entity, parts[-2], parts[-1]])
+                        position = positions[el_idxs[i]]
+                        start = position[0]
+                        length = position[1]
+                        parts = position[2]
+                        positions[el_idxs[i]] = (start, length, [entity, parts[-2], parts[-1]])
+
+                    disambiguated = True
+                except:
+                    disambiguated = False
+
+            if not disambiguated:
+                for i in reversed(range(len(el_idxs))):
+                    position = positions[el_idxs[i]]
+                    start = position[0]
+                    length = position[1]
+                    parts = position[2]
+                    alias = parts[-2]
+                    candidates = parts[0].split('###')
+
+                    best_candidate = candidates[0]
+                    max_matches = 0
+                    for candidate in candidates:
+                        if candidate in aliases_reverse and alias in aliases_reverse[candidate] and \
+                                aliases_reverse[candidate][alias] > max_matches:
+                            max_matches = aliases_reverse[candidate][alias]
+                            best_candidate = candidate
+                    entity = best_candidate
+                    parts = [entity, alias, parts[-1]]
+
+                    positions[el_idxs[i]] = (start, length, [entity, alias, parts[-1]])
+
 
         # sort positions and then resolve if found some non person corefs
         if found_some_corefs:

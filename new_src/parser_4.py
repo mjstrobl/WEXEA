@@ -56,8 +56,10 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, cor
                 elif parts[0] in corefs:
                     for c in corefs[parts[0]]:
                         c = c.strip()
-                        if c in coref_assignments:
-                            c = coref_assignments[c]
+                        if c == 'he':
+                            c = 'male'
+                        elif c == 'she':
+                            c = 'female'
                         current_corefs[c] = parts[0]
                 elif "PERSON" in parts[-1]:
                     tokens = parts[0].split(' ')

@@ -220,8 +220,7 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, rea
         f.write(complete_content.strip())
 
 
-def process_articles(title2Id,
-                     filename2title,
+def process_articles(filename2title,
                      filenames, logging_path, corefs, use_entity_linker, aliases_reverse, reader, model):
     start_time = time.time()
 
@@ -236,33 +235,26 @@ def process_articles(title2Id,
     for i in range(len(filenames)):
         filename = filenames[i]
         title = filename2title[filename]
-        # if title == "Queen Victoria" or title == "Wilhelm II, German Emperor" or title == 'Queen Victoria Park':
-        # try:
-        if title in title2Id:
-            title_id = title2Id[title]
+        new_filename, _, _, _ = create_filename(title, outputpath + ARTICLE_OUTPUTPATH + '/')
+        new_filename2title[new_filename] = title
 
-            new_filename, _, _, _ = create_filename(title, outputpath + ARTICLE_OUTPUTPATH + '/')
-            new_filename2title[new_filename] = title
+        logger.write("Start with file: " + new_filename + "\n")
 
-            logger.write("Start with file: " + new_filename + "\n")
+        if not os.path.isfile(new_filename):
+            with open(filename) as f:
+                text = f.read()
+                process_article(text,
+                                title,
+                                corefs, use_entity_linker, aliases_reverse, reader, model)
 
-            if not os.path.isfile(new_filename):
-                with open(filename) as f:
-                    text = f.read()
-                    process_article(text,
-                                    title,
-                                    corefs, use_entity_linker, aliases_reverse, reader, model)
+            logger.write("File done: " + new_filename + "\n")
+        else:
+            logger.write("File exists: " + new_filename + "\n")
 
-                logger.write("File done: " + new_filename + "\n")
-            else:
-                logger.write("File exists: " + new_filename + "\n")
-
-            counter_all += 1
+        counter_all += 1
+        if counter_all % 1000 == 0:
             time_per_article = (time.time() - start_time) / counter_all
             print("articles: " + str(counter_all) + ", avg time: " + str(time_per_article), end='\r')
-        # except Exception as e:
-        #    print(e)
-        #    pass
 
     print("articles processed: " + str(counter_all))
 
@@ -290,7 +282,6 @@ if (__name__ == "__main__"):
     except OSError:
         print("directories exist already")
 
-    title2Id = json.load(open(dictionarypath + 'title2Id_pruned.json'))
     filename2title = json.load(open(dictionarypath + 'filename2title_3.json'))
     filenames = list(filename2title.keys())
     aliases_reverse = json.load(open(dictionarypath + 'aliases_reverse.json'))
@@ -386,4 +377,4 @@ if (__name__ == "__main__"):
 
         tf.compat.v1.get_default_graph().finalize()
 
-        process_articles(title2Id,filename2title,filenames, logging_path, corefs, use_entity_linker, aliases_reverse, reader, model)
+        process_articles(filename2title,filenames, logging_path, corefs, use_entity_linker, aliases_reverse, reader, model)

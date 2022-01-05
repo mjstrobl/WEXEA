@@ -1,20 +1,15 @@
 import re
 import os
 import json
-import multiprocessing
 import time
 import datetime
 import gender_guesser.detector as gender
-
 from utils import create_file_name_and_directory, create_filename, RE_LINKS
-
 from entity_linker.readers.inference_reader import InferenceReader
 from entity_linker.models.figer_model.el_model import ELModel
 from entity_linker.readers.config import Config
 from entity_linker.readers.vocabloader import VocabLoader
-
 import tensorflow as tf
-
 
 ARTICLE_OUTPUTPATH = "articles_final"
 
@@ -39,6 +34,7 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, rea
         el_idxs = []
         found_some_corefs = False
         previous_end = 0
+        ignore_line = False
         while True:
             match = re.search(RE_LINKS, line)
             if match:
@@ -46,21 +42,16 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, rea
                 end = match.end()
                 entity = match.group(1)
                 parts = entity.split('|')
+                if len(parts) < 2:
+                    ignore_line = True
+                    break
                 alias = parts[-2]
 
+
+
                 if ("multiple" in parts[-1] or 'part_of_seen_entity' in parts[-1]) and '###' in parts[0]:
-                    # use entity linker, which we will deal with later.
-                    if not use_entity_linker:
-                        max_matches = 0
-                        candidates = parts[0].split('###')
-                        for candidate in candidates:
-                            if candidate in aliases_reverse and alias in aliases_reverse[candidate] and aliases_reverse[candidate][alias] > max_matches:
-                                max_matches = aliases_reverse[candidate][alias]
-                                best_candidate = candidate
-                        entity = best_candidate
-                        parts = [entity, alias, parts[-1]]
-                    else:
-                        el_idxs.append(len(positions))
+                    # use entity linker, which we will deal with later
+                    el_idxs.append(len(positions))
                 elif 'PERSON' in parts[-1] and parts[0].lower() in coref_assignments and coref_assignments[parts[0].lower()] in current_corefs:
                     # found a coref of a person
                     parts = [current_corefs[coref_assignments[parts[0].lower()]], alias, 'PERSON_coref']
@@ -123,60 +114,91 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, rea
                 break
 
 
+        if ignore_line:
+            continue
 
         # disambiguate here!
         if len(el_idxs) > 0:
             el_text = line
 
-            for i in reversed(range(len(el_idxs))):
-                position = positions[el_idxs[i]]
-                start = position[0]
-                length = position[1]
-                parts = position[2]
+            disambiguated = False
+            if use_entity_linker:
+                try:
+                    for i in reversed(range(len(el_idxs))):
+                        position = positions[el_idxs[i]]
+                        start = position[0]
+                        length = position[1]
+                        parts = position[2]
 
-                el_text = el_text[:start] + '[[' + '|'.join(parts) + ']]' + el_text[start+length:]
+                        el_text = el_text[:start] + '[[' + '|'.join(parts) + ']]' + el_text[start+length:]
 
-            reader.loadTestDoc(el_text)
+                    reader.loadTestDoc(el_text)
 
-            mentions = reader.mentions
+                    mentions = reader.mentions
 
-            if reader.disambiguations_counter > 0:
-                # print(reader.disambiguations_counter)
-                (predTypScNPmat_list,
-                 widIdxs_list,
-                 priorProbs_list,
-                 textProbs_list,
-                 jointProbs_list,
-                 evWTs_list,
-                 pred_TypeSetsList) = model.doInference()
+                    if reader.disambiguations_counter > 0:
+                        # print(reader.disambiguations_counter)
+                        (predTypScNPmat_list,
+                         widIdxs_list,
+                         priorProbs_list,
+                         textProbs_list,
+                         jointProbs_list,
+                         evWTs_list,
+                         pred_TypeSetsList) = model.doInference()
 
-            new_mentions = {}
-            mentionnum = 0
-            for i in range(len(mentions)):
-                mention = mentions[i]
-                alias = mention.surface
-                mention_start = mention.char_start
-                mention_length = mention.link_len
-                sent_idx = mention.sentence_idx
-                mention_type = mention.type
+                    new_mentions = {}
+                    mentionnum = 0
+                    for i in range(len(mentions)):
+                        mention = mentions[i]
+                        alias = mention.surface
+                        mention_start = mention.char_start
+                        mention_length = mention.link_len
+                        sent_idx = mention.sentence_idx
+                        mention_type = mention.type
 
-                if sent_idx not in new_mentions:
-                    new_mentions[sent_idx] = []
+                        if sent_idx not in new_mentions:
+                            new_mentions[sent_idx] = []
 
-                if i in reader.disambiguations and len(mention.entities) > 1:
+                        if i in reader.disambiguations and len(mention.entities) > 1:
 
-                    [evWTs, evWIDS, evProbs] = evWTs_list[mentionnum]
-                    disambiguation = mention.wikititles[evWIDS[2]]
-                    entity = disambiguation
-                    mentionnum += 1
-                else:
-                    entity = mention.entities[0]
+                            [evWTs, evWIDS, evProbs] = evWTs_list[mentionnum]
+                            disambiguation = mention.wikititles[evWIDS[2]]
+                            entity = disambiguation
+                            mentionnum += 1
+                        else:
+                            entity = mention.entities[0]
 
-                position = positions[el_idxs[i]]
-                start = position[0]
-                length = position[1]
-                parts = position[2]
-                positions[el_idxs[i]] = (start, length, [entity, parts[-2], parts[-1]])
+                        position = positions[el_idxs[i]]
+                        start = position[0]
+                        length = position[1]
+                        parts = position[2]
+                        positions[el_idxs[i]] = (start, length, [entity, parts[-2], parts[-1]])
+
+                    disambiguated = True
+                except:
+                    disambiguated = False
+
+            if not disambiguated:
+                for i in reversed(range(len(el_idxs))):
+                    position = positions[el_idxs[i]]
+                    start = position[0]
+                    length = position[1]
+                    parts = position[2]
+                    alias = parts[-2]
+                    candidates = parts[0].split('###')
+
+                    best_candidate = candidates[0]
+                    max_matches = 0
+                    for candidate in candidates:
+                        if candidate in aliases_reverse and alias in aliases_reverse[candidate] and \
+                                aliases_reverse[candidate][alias] > max_matches:
+                            max_matches = aliases_reverse[candidate][alias]
+                            best_candidate = candidate
+                    entity = best_candidate
+                    parts = [entity, alias, parts[-1]]
+
+                    positions[el_idxs[i]] = (start, length, [entity, alias, parts[-1]])
+
 
         # sort positions and then resolve if found some non person corefs
         if found_some_corefs:
@@ -198,9 +220,7 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, rea
         f.write(complete_content.strip())
 
 
-def process_articles(process_index,
-                     num_processes,
-                     title2Id,
+def process_articles(title2Id,
                      filename2title,
                      filenames, logging_path, corefs, use_entity_linker, aliases_reverse, reader, model):
     start_time = time.time()
@@ -211,50 +231,47 @@ def process_articles(process_index,
 
     new_filename2title = {}
 
-    logger = open(logging_path + "process_" + str(process_index) + "_logger.txt", 'w')
+    logger = open(logging_path + "process_logger.txt", 'w')
 
     for i in range(len(filenames)):
-        if i % num_processes == process_index:
-            filename = filenames[i]
-            title = filename2title[filename]
-            # if title == "Queen Victoria" or title == "Wilhelm II, German Emperor" or title == 'Queen Victoria Park':
-            # try:
-            if title in title2Id:
-                title_id = title2Id[title]
+        filename = filenames[i]
+        title = filename2title[filename]
+        # if title == "Queen Victoria" or title == "Wilhelm II, German Emperor" or title == 'Queen Victoria Park':
+        # try:
+        if title in title2Id:
+            title_id = title2Id[title]
 
-                new_filename, _, _, _ = create_filename(title, outputpath + ARTICLE_OUTPUTPATH + '/')
-                new_filename2title[new_filename] = title
+            new_filename, _, _, _ = create_filename(title, outputpath + ARTICLE_OUTPUTPATH + '/')
+            new_filename2title[new_filename] = title
 
-                logger.write("Start with file: " + new_filename + "\n")
+            logger.write("Start with file: " + new_filename + "\n")
 
-                if not os.path.isfile(new_filename):
-                    with open(filename) as f:
-                        text = f.read()
-                        process_article(text,
-                                        title,
-                                        corefs, use_entity_linker, aliases_reverse, reader, model)
+            if not os.path.isfile(new_filename):
+                with open(filename) as f:
+                    text = f.read()
+                    process_article(text,
+                                    title,
+                                    corefs, use_entity_linker, aliases_reverse, reader, model)
 
-                    logger.write("File done: " + new_filename + "\n")
-                else:
-                    logger.write("File exists: " + new_filename + "\n")
+                logger.write("File done: " + new_filename + "\n")
+            else:
+                logger.write("File exists: " + new_filename + "\n")
 
-                counter_all += 1
-                if process_index == 0:
-                    time_per_article = (time.time() - start_time) / counter_all
-                    print("Process " + str(process_index) + ', articles: ' + str(counter_all) + ", avg time: " +
-                          str(time_per_article), end='\r')
-            # except Exception as e:
-            #    print(e)
-            #    pass
+            counter_all += 1
+            time_per_article = (time.time() - start_time) / counter_all
+            print("articles: " + str(counter_all) + ", avg time: " + str(time_per_article), end='\r')
+        # except Exception as e:
+        #    print(e)
+        #    pass
 
-    print("Process " + str(process_index) + ', articles processed: ' + str(counter_all))
+    print("articles processed: " + str(counter_all))
 
-    with open(dictionarypath + str(process_index) + '_filename2title_final.json', 'w') as f:
+    with open(dictionarypath + 'filename2title_final.json', 'w') as f:
         json.dump(new_filename2title, f)
 
     end_time = time.time()
     elapsed_time = end_time - start_time
-    print("Process " + str(process_index) + ", elapsed time: %s" % str(datetime.timedelta(seconds=elapsed_time)))
+    print("elapsed time: %s" % str(datetime.timedelta(seconds=elapsed_time)))
 
     logger.close()
 
@@ -282,22 +299,17 @@ if (__name__ == "__main__"):
     gender_detector = gender.Detector()
     use_entity_linker = True
 
-
     print("Read dictionaries.")
 
     config_proto = tf.compat.v1.ConfigProto()
     config_proto.allow_soft_placement = True
     config_proto.gpu_options.allow_growth = True
-    # sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(log_device_placement=True))
 
     tf.compat.v1.disable_eager_execution()
 
-    checkpoint_dir = '/media/michi/Data/non_essential_repos/neural-el/neural-el_resources/models/CDTE.model'
     checkpoint_dir = config['original_el_model']
-    #model_checkpoint_path = '/media/michi/Data/non_essential_repos/neural-el/neural-el_resources/models/CDTE_newstuff222.model'
     model_checkpoint_path = config['neural_el_model']
     replace_from = 'RNN/MultiRNNCell/Cell0/BasicLSTMCell'
-    # 'rnn/multirnncell/cell0/basiclstmcell'
     replace_to = 'rnn/multi_rnn_cell/cell_0/basic_lstm_cell'
     add_prefix = None
     state_dict = {}
@@ -313,7 +325,6 @@ if (__name__ == "__main__"):
             new_name = var_name
             if None not in [replace_from, replace_to]:
                 new_name = new_name.replace(replace_from, replace_to)
-                # new_name = new_name.replace("coherence_layer_0","coherence_layer_0_1")
                 new_name = new_name.lower()
                 new_name = new_name.replace('linear/matrix', 'kernel')
                 new_name = new_name.replace('linear/bias', 'bias')
@@ -342,9 +353,6 @@ if (__name__ == "__main__"):
                                  pretrain_wordembed=True,
                                  coherence=True)
 
-        for op in tf.compat.v1.get_default_graph().get_operations():
-            print(op.name)
-
         model = ELModel(
             sess=sess, reader=reader,
             max_steps=32000,
@@ -371,31 +379,11 @@ if (__name__ == "__main__"):
             entyping=False)
 
         model_var_dict = {}
-        for op in tf.compat.v1.get_default_graph().get_operations():
-            print(op.name)
 
-        #model_checkpoint_path = '/media/michi/Data/non_essential_repos/neural-el/neural-el_resources/models/CDTE_newstuff222.model'
         model_checkpoint_path = config['neural_el_model']
         saver = tf.compat.v1.train.Saver()
         saver.restore(sess, model_checkpoint_path)
 
         tf.compat.v1.get_default_graph().finalize()
 
-
-        jobs = []
-        for i in range(num_processes):
-            p = multiprocessing.Process(target=process_articles, args=(i,
-                                                                       num_processes,
-                                                                       title2Id,
-                                                                       filename2title,
-                                                                       filenames, logging_path, corefs, use_entity_linker, aliases_reverse, reader, model))
-
-            jobs.append(p)
-            p.start()
-
-        del title2Id
-        del filename2title
-        del filenames
-
-        for job in jobs:
-            job.join()
+        process_articles(title2Id,filename2title,filenames, logging_path, corefs, use_entity_linker, aliases_reverse, reader, model)

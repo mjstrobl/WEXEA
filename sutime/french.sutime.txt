@@ -1,0 +1,73 @@
+###############################################################
+
+  ENV.defaults["stage"] = 1
+  ENV.defaults["ruleType"] = "tokens"
+
+  # map month names to numbers
+  MONTH_MAP = {
+      "janvier": 1,
+      "février": 2,
+      "mars": 3,
+      "avril": 4,
+      "mai": 5,
+      "juin": 6,
+      "juillet": 7,
+      "août": 8,
+      "septembre": 9,
+      "octobre": 10,
+      "novembre": 11,
+      "décembre": 12
+    }
+
+  # dates
+
+  $MONTH_NAME = "/janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre/";
+
+  # full date
+  { (/le/? (/[0-9]{1,2}/) ($MONTH_NAME) (/[0-9]{4}/)) => IsoDate($3[0].numcompvalue, MONTH_MAP[$2[0].word], $1[0].numcompvalue) }
+
+  # day and month
+  { (/le/? (/[0-9]{1,2}/) ($MONTH_NAME)) => IsoDate(NIL, MONTH_MAP[$2[0].word], $1[0].numcompvalue) }
+
+  # month and year
+  { (($MONTH_NAME) (/[0-9]{4}/)) => IsoDate($2[0].numcompvalue, MONTH_MAP[$1[0].numcompvalue], NIL) }
+
+  # month alone
+  { (/janvier/) => JANUARY }
+  { (/février/) => FEBRUARY }
+  { (/mars/) => MARCH }
+  { (/avril/) => APRIL }
+  { (/mai/) => MAY }
+  { (/juin/) => JUNE }
+  { (/juillet/) => JULY }
+  { (/août/) => AUGUST }
+  { (/septembre/) => SEPTEMBER }
+  { (/octobre/) => OCTOBER }
+  { (/novembre/) => NOVEMBER }
+  { (/décembre/) => DECEMBER }
+
+  # relative times
+  { (/hier/) => YESTERDAY }
+  { (/aujourd'hui/) => TODAY }
+  { (/demain/) => TOMORROW }
+  { (/ce/ /nuit/) => TONIGHT }
+
+  # days of the week
+  { (/lundi/) => MONDAY }
+  { (/mardi/) => TUESDAY }
+  { (/mercredi/) => WEDNESDAY }
+  { (/jeudi/) => THURSDAY }
+  { (/vendredi/) => FRIDAY }
+  { (/samedi/) => SATURDAY }
+  { (/dimanche/) => SUNDAY }
+
+###############################################################
+
+  ENV.defaults["ruleType"] = "tokens"
+  ENV.defaults["priority"] = 0
+  ENV.defaults["locale"] = "en"
+
+  { ruleType: "time", pattern: /yyyy-?MM-?dd-?'T'HH(:?mm(:?ss([.,]S{1,3})?)?)?(Z)?/ }
+  { ruleType: "time", pattern: /yyyy-MM-dd/ }
+
+  { ruleType: "time", pattern: /dd?\\?\/MM?\\?\/(yyyy|yy)/ }

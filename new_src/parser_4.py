@@ -41,6 +41,7 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, cor
                 entity = match.group(1)
                 parts = entity.split('|')
                 if len(parts) < 2:
+                    #TODO: investigate why this happens, it could be a thumbnail in the middle or end of a paragraph of text. ignore it for now.
                     ignore_line = True
                     break
                 alias = parts[-2]

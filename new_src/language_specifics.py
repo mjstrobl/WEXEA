@@ -57,7 +57,7 @@ DASH = ['{{spaced ndash}}', '{{dash}}', '{{snd}}', '{{spnd}}', '{{sndash}}', '{{
 RE_CATEGORIES = re.compile(r'\[\[Catégorie:(.*?)\]\]', re.UNICODE)
 RE_REMOVE_SECTIONS = re.compile(r'==\s*Voir aussi|==\s*Notes et références|==\s*Notes|==\s*Références|==\s*Bibliographie|==\s*Annexes|==\s*Liens externes',re.DOTALL | re.UNICODE)
 CONVERT_TEMPLATE_SEPARATORS = {'-':'-','&ndash;':'-','and':' and ','and(-)':' and ','or':' or ','to':' to ','to(-)':' to ','to about':' to about ','+/-':' ± ','±':' ± ','&plusmn;':' ± ','+':' + ',',':', ',', and':', and ',', or':', or ','by':' by ','x':' by ','&times;':' by '}
-RE_FILES = re.compile(r'\[\[(Image|Fichier.*?)\]\]', re.UNICODE)
+RE_FILES = re.compile(r'\[\[(Image|Fichier|Image|File.*?)\]\]', re.UNICODE)
 RE_CATEGORY_REDIRECT = re.compile(r'{{catégorie redirect\|([^}{]*)}}', re.DOTALL | re.UNICODE | re.MULTILINE)
 IGNORED_NAMESPACES = [
     'discussion', 'utilisateur', 'wikipédia', 'fichier', 'mediawiki',
@@ -66,7 +66,6 @@ IGNORED_NAMESPACES = [
 ]
 RE_DISAMBIGUATIONS = '{{homonymie\||\|homonymie}}|{{homonymie}}'
 RE_HUMAN_DISAMBIGUATIONS = '{{homonymie de personnes\||\|homonymie de personnes}}|{{homonymie de personnes}}'
-RE_HUMAN_DISAMBIGUATIONS = '{{hndis\||\|hndis}}|{{hndis}}|{{human name disambiguation}}|{{human name disambiguation\||\|human name disambiguation}}'
 RE_GEO_DISAMBIGUATIONS = '{{toponymie}}|{{toponymie}}|{{toponymie\||\|toponymie}}'
 RE_NUMBER_DISAMBIGUATIONS = '{{number disambiguation\||\|number disambiguation}}|{{numdab\||\|numdab}}|{{numberdis\||\|numberdis}}|{{numberdis}}|{{numdab}}|{{number disambiguation}}'
 RE_STUB = 'ébauche}}'
@@ -75,10 +74,44 @@ SURNAMES = '{{patronymie}}', '[[Catégorie:Patronyme]]'
 '''
 
 '''
-GERMAN
+SPANISH
 '''
 
+CATEGORY = "categoría"
+LIST = "lista "
+REDIRECT = "redir"
+FILE = 'archivo'
+IMAGE = 'imagen'
+TEMPLATE_QUOTE = 'cita'
+LANG = ['lengua']
+AS_OF = 'as of'
+CONVERT = ['convert']
+TEMPLATE = 'plantilla'
+INFOBOX = 'infobox'
+DASH = ['{{spaced ndash}}', '{{dash}}', '{{snd}}', '{{spnd}}', '{{sndash}}', '{{spndash}}', '&ndash;', '&mdash;']
+RE_CATEGORIES = re.compile(r'\[\[Categoría:(.*?)\]\]', re.UNICODE)
+RE_REMOVE_SECTIONS = re.compile(r'==\s*Obra literaria|==\s*Véase también|==\s*Referencias|==\s*Véase también|==\s*Bibliografía|==\s*Notas|==\s*Enlaces externos',re.DOTALL | re.UNICODE)
+CONVERT_TEMPLATE_SEPARATORS = {'-':'-','&ndash;':'-','and':' and ','and(-)':' and ','or':' or ','to':' to ','to(-)':' to ','to about':' to about ','+/-':' ± ','±':' ± ','&plusmn;':' ± ','+':' + ',',':', ',', and':', and ',', or':', or ','by':' by ','x':' by ','&times;':' by '}
+RE_FILES = re.compile(r'\[\[(Imagen|Archivo|Image|File.*?)\]\]', re.UNICODE)
+RE_CATEGORY_REDIRECT = re.compile(r'{{categoría redirigida\|([^}{]*)}}', re.DOTALL | re.UNICODE | re.MULTILINE)
+IGNORED_NAMESPACES = [
+    'usuario', 'discusión', 'wikipédia', 'archivo', 'mediawiki',
+    'plantilla', 'ayuda', 'categoría', 'portal', 'wikiproyecto', 'anexo',
+    'módulo', 'accesorio', 'category', 'file', 'image', 'template'
+]
+RE_DISAMBIGUATIONS = '{{desambiguación\||\|desambiguación}}|{{desambiguación}}'
+RE_HUMAN_DISAMBIGUATIONS = '{{hndis\||\|hndis}}|{{hndis}}|{{human name disambiguation}}|{{human name disambiguation\||\|human name disambiguation}}'
+RE_GEO_DISAMBIGUATIONS = '{{place name disambiguation}}|{{geodis}}|{{geodis\||\|geodis}}'
+RE_NUMBER_DISAMBIGUATIONS = '{{number disambiguation\||\|number disambiguation}}|{{numdab\||\|numdab}}|{{numberdis\||\|numberdis}}|{{numberdis}}|{{numdab}}|{{number disambiguation}}'
+RE_STUB = 'esbozo}}'
+GIVEN_NAMES = '{{nombre}}', '[[Categoría:Nombres propios]]', '[[Categoría:Nombres femeninos]]', '[[Categoría:Nombres masculinos]]'
+SURNAMES = '{{apellidos}}', '[[Categoría:Apellidos]]'
 
+
+'''
+GERMAN
+'''
+'''
 CATEGORY = "kategorie"
 LIST = "liste "
 REDIRECT = "weiterleitung"
@@ -94,7 +127,7 @@ DASH = ['{{spaced ndash}}', '{{dash}}', '{{snd}}', '{{spnd}}', '{{sndash}}', '{{
 RE_CATEGORIES = re.compile(r'\[\[Kategorie:(.*?)\]\]', re.UNICODE)
 RE_REMOVE_SECTIONS = re.compile(r'==\s*Siehe auch|==\s*Literatur|==\s*Weblinks|==\s*Anmerkungen|==\s*Quellen|==\s*Einzelnachweise',re.DOTALL | re.UNICODE)
 CONVERT_TEMPLATE_SEPARATORS = {'-':'-','&ndash;':'-','and':' and ','and(-)':' and ','or':' or ','to':' to ','to(-)':' to ','to about':' to about ','+/-':' ± ','±':' ± ','&plusmn;':' ± ','+':' + ',',':', ',', and':', and ',', or':', or ','by':' by ','x':' by ','&times;':' by '}
-RE_FILES = re.compile(r'\[\[(Bild|Datei.*?)\]\]', re.UNICODE)
+RE_FILES = re.compile(r'\[\[(Bild|Datei|Image|File.*?)\]\]', re.UNICODE)
 RE_CATEGORY_REDIRECT = re.compile(r'{{Kategorie Weiterleitungshinweis\|([^}{]*)}}', re.DOTALL | re.UNICODE | re.MULTILINE)
 
 # See https://de.wikipedia.org/wiki/Hilfe:Namensr%C3%A4ume
@@ -111,7 +144,7 @@ RE_STUB = 'lückenhaft}}'
 GIVEN_NAMES = '{{given name}}', '[[Kategorie:Vorname]]', '[[Kategorie:Männlicher Vorname]]', '[[Kategorie:Weiblicher Vorname]]'
 SURNAMES = '{{surname}}', '[[Kategorie:Familienname]]'
 
-
+'''
 
 
 

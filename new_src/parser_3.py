@@ -262,20 +262,37 @@ def process_articles(process_index,
 
     new_filename2title = {}
 
+
+    sutime_path = config['sutime']
+
     if language == 'de':
+        sutime_rules = "edu/stanford/nlp/models/sutime/defs.sutime.txt,edu/stanford/nlp/models/sutime/english.sutime.txt,edu/stanford/nlp/models/sutime/english.holidays.sutime.txt," + sutime_path + "german.sutime.txt"
         props = {"tokenize.language": "de", "pos.model": "edu/stanford/nlp/models/pos-tagger/german-ud.tagger",
                  "tokenize.postProcessor": "edu.stanford.nlp.international.german.process.GermanTokenizerPostProcessor",
                  "ner.applyFineGrained": False,
                  "ner.model": "edu/stanford/nlp/models/ner/german.distsim.crf.ser.gz",
-                 "ner.applyNumericClassifiers": False, "ner.useSUTime": False
+                 "ner.applyNumericClassifiers": True, "ner.useSUTime": True, "ner.language": "fr",
+                 "sutime.rules": sutime_rules
                  }
     elif language == 'fr':
+        sutime_rules = "edu/stanford/nlp/models/sutime/defs.sutime.txt,edu/stanford/nlp/models/sutime/english.sutime.txt,edu/stanford/nlp/models/sutime/english.holidays.sutime.txt," + sutime_path + "french.sutime.txt"
         props = {"tokenize.language": "fr", "pos.model": "edu/stanford/nlp/models/pos-tagger/french-ud.tagger",
-                 "ner.applyFineGrained": False, "ner.model": "edu/stanford/nlp/models/ner/french-wikiner-4class.crf.ser.gz",
-                 "ner.applyNumericClassifiers": False, "ner.useSUTime": False
-        }
+                 "ner.applyFineGrained": False,
+                 "ner.model": "edu/stanford/nlp/models/ner/french-wikiner-4class.crf.ser.gz",
+                 "ner.applyNumericClassifiers": True, "ner.useSUTime": True, "ner.language": "fr",
+                 "sutime.rules": sutime_rules
+                 }
+
+    elif language == 'es':
+        props = {"tokenize.language": "es", "pos.model": "edu/stanford/nlp/models/pos-tagger/spanish-ud.tagger",
+                 "ner.applyFineGrained": False,
+                 "ner.model": "edu/stanford/nlp/models/ner/spanish.ancora.distsim.s512.crf.ser.gz",
+                 "ner.applyNumericClassifiers": True, "ner.useSUTime": True, "ner.language": "es",
+                 "sutime.rules": "edu/stanford/nlp/models/sutime/defs.sutime.txt,edu/stanford/nlp/models/sutime/english.sutime.txt,edu/stanford/nlp/models/sutime/english.holidays.sutime.txt,edu/stanford/nlp/models/sutime/spanish.sutime.txt"
+                 }
     else:
-        props = {"ner.applyFineGrained": False, "ner.model": "edu/stanford/nlp/models/ner/english.muc.7class.distsim.crf.ser.gz"}
+        props = {"ner.applyFineGrained": False,
+                 "ner.model": "edu/stanford/nlp/models/ner/english.muc.7class.distsim.crf.ser.gz"}
 
     annotators = ['tokenize', 'ssplit', 'pos', 'lemma', 'ner']
     client = CoreNLPClient(

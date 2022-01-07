@@ -161,7 +161,7 @@ class WikiHandler(xml.sax.ContentHandler):
             # Look for more redirects in article text
             lines = text.split('\n')
             for line in lines:
-                if not line.startswith('{{' + REDIRECT + '|'):
+                if not line.startswith('{{' + REDIRECT):
                     break
                 else:
                     line = line[11:]

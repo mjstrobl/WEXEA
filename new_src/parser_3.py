@@ -384,9 +384,15 @@ if (__name__ == "__main__"):
     try:
         mode = 0o755
         os.mkdir(logging_path, mode)
+    except OSError:
+        print("directories exist already")
+
+    try:
+        mode = 0o755
         os.mkdir(articlepath, mode)
     except OSError:
         print("directories exist already")
+
 
     language = 'en'
     if 'language' in config:

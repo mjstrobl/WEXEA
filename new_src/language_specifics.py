@@ -76,7 +76,7 @@ SURNAMES = '{{patronymie}}', '[[Catégorie:Patronyme]]'
 '''
 SPANISH
 '''
-
+'''
 CATEGORY = "categoría"
 LIST = "lista "
 REDIRECT = "redir"
@@ -106,12 +106,12 @@ RE_NUMBER_DISAMBIGUATIONS = '{{number disambiguation\||\|number disambiguation}}
 RE_STUB = 'esbozo}}'
 GIVEN_NAMES = '{{nombre}}', '[[Categoría:Nombres propios]]', '[[Categoría:Nombres femeninos]]', '[[Categoría:Nombres masculinos]]'
 SURNAMES = '{{apellidos}}', '[[Categoría:Apellidos]]'
-
+'''
 
 '''
 GERMAN
 '''
-'''
+
 CATEGORY = "kategorie"
 LIST = "liste "
 REDIRECT = "weiterleitung"
@@ -144,7 +144,6 @@ RE_STUB = 'lückenhaft}}'
 GIVEN_NAMES = '{{given name}}', '[[Kategorie:Vorname]]', '[[Kategorie:Männlicher Vorname]]', '[[Kategorie:Weiblicher Vorname]]'
 SURNAMES = '{{surname}}', '[[Kategorie:Familienname]]'
 
-'''
 
 
 

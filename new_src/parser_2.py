@@ -423,14 +423,19 @@ def merge_all_dictionaries(all_titles,title2Id, num_processes, dictionarypath):
 
     links_pruned = {}
     for title_id in links:
+        # title_id is of type string, but ids in id2title are integers.
+        ls = links[title_id]
+        title_id = int(title_id)
         if title_id in id2title:
-            for entity_id in links[title_id]:
+            for entity_id in ls:
+                entity_links = ls[entity_id]
+                entity_id = int(entity_id)
                 if entity_id in id2title:
                     if title_id not in links_pruned:
                         links_pruned[title_id] = {}
                     if entity_id not in links_pruned[title_id]:
                         links_pruned[title_id][entity_id] = 0
-                    links_pruned[title_id][entity_id] += links[title_id][entity_id]
+                    links_pruned[title_id][entity_id] += entity_links
 
     with open(dictionarypath + 'links_pruned.json', 'w') as f:
         json.dump(links_pruned, f)

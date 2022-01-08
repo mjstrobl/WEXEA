@@ -168,8 +168,12 @@ def process_article(text,
                         for candidate in candidates:
                             if candidate in title2Id:
                                 candidate_id = title2Id[candidate]
+                                #candidate_id is an integer, but links contains strings as Ids
+                                candidate_id = str(candidate_id)
                                 if candidate_id in links:
                                     candidate_links = links[candidate_id]
+                                    # title_id needs to be string
+                                    title_id = str(title_id)
                                     if title_id in candidate_links:
                                         num_links = candidate_links[title_id]
                                         if num_links > max_links:

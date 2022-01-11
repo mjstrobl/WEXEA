@@ -4,7 +4,7 @@ import json
 import multiprocessing
 import time
 import datetime
-from utils import create_file_name_and_directory, jsonKeys2int, find_positions_of_all_links_with_regex, create_filename
+from utils import create_file_name_and_directory, jsonKeys2int, find_positions_of_all_links_with_regex, create_filename, RE_LINKS
 
 from stanza.server import CoreNLPClient, StartServer
 

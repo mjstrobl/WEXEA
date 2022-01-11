@@ -5,6 +5,7 @@ import time
 import datetime
 from utils import RE_LINKS
 
+ner_tags = {"DATE","NUMBER","MISC","LOCATION","PERSON","ORGANIZATION",'DURATION','MONEY','PERCENT','TIME'}
 
 def process_article(text, all_tags):
     for line in text.split('\n'):
@@ -18,7 +19,7 @@ def process_article(text, all_tags):
                 parts = entity.split('|')
                 tag = parts[-1]
 
-                if len(parts) >= 3:
+                if len(parts) == 3 or tag in ner_tags:
                     if tag not in all_tags:
                         all_tags[tag] = 0
 

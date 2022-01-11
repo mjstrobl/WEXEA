@@ -95,7 +95,7 @@ CONVERT_TEMPLATE_SEPARATORS = {'-':'-','&ndash;':'-','and':' and ','and(-)':' an
 RE_FILES = re.compile(r'\[\[(Imagen|Archivo|Image|File.*?)\]\]', re.UNICODE)
 RE_CATEGORY_REDIRECT = re.compile(r'{{categoría redirigida\|([^}{]*)}}', re.DOTALL | re.UNICODE | re.MULTILINE)
 IGNORED_NAMESPACES = [
-    'usuario', 'discusión', 'wikipédia', 'archivo', 'mediawiki',
+    'usuario', 'discusión', 'wikipédia', 'archivo', 'imagen', 'mediawiki',
     'plantilla', 'ayuda', 'categoría', 'portal', 'wikiproyecto', 'anexo',
     'módulo', 'accesorio', 'category', 'file', 'image', 'template'
 ]
@@ -132,7 +132,7 @@ RE_CATEGORY_REDIRECT = re.compile(r'{{Kategorie Weiterleitungshinweis\|([^}{]*)}
 
 # See https://de.wikipedia.org/wiki/Hilfe:Namensr%C3%A4ume
 IGNORED_NAMESPACES = [
-    'diskussion', 'benutzer', 'wikipedia', 'datei', 'mediawiki',
+    'diskussion', 'benutzer', 'wikipedia', 'datei', 'bild', 'mediawiki',
     'vorlage', 'hilfe', 'kategorie', 'portal', 'modul', 'gadget',
     'thema', 'spezial', 'medium', 'category', 'file', 'image', 'template'
 ]

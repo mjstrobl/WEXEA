@@ -67,6 +67,16 @@ def process_article(text,
             continue
 
         if line.startswith('='):
+            while True:
+                match = re.search(RE_LINKS, line)
+                if match:
+                    start = match.start()
+                    end = match.end()
+                    entity = match.group(1)
+                    parts = entity.split('|')
+                    alias = parts[-1]
+                    line = line[:start] + alias + line[end:]
+
             complete_content += '\n' + line
             continue
 

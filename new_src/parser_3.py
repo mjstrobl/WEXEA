@@ -113,14 +113,13 @@ def process_article(text,
             tag_to_print = tag
 
             if alias is not None and len(alias) > 0:
-                if tag == "acronym_ner":
-                    alias = entity
-
-                if tag == 'DATE' or tag == 'TIME' or tag == 'DURATION' or tag == 'SET':
+                if tag == 'DATE' or tag == 'TIME' or tag == 'DURATION' or tag == 'SET' or tag == 'MONEY' or tag == 'PERCENT' or tag == 'ORDINAL':
                     tag_to_print = tag
                     entity = None
+                elif tag == "acronym_entity":
+                    entity = alias
                 elif tag == "acronym" and i > 0:
-                    entity = positions[i-1][1]
+                    entity = positions[i-1][2]
                 elif entity and tag == 'annotation':
                     if alias[0].isupper() or alias[0].isnumeric():
                         tag_to_print = tag

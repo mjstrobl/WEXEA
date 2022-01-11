@@ -30,7 +30,7 @@ class WikiHandler(xml.sax.ContentHandler):
         self.outputpath = outputpath
         self.categorypath = categorypath
         self.listof_path = listof_path
-        self.start = current_milli_time()
+        self.start = time.time()
 
     # Call when an element starts
     def startElement(self, tag, attributes):
@@ -48,7 +48,7 @@ class WikiHandler(xml.sax.ContentHandler):
                 self.counter_all += 1
 
                 if self.counter_all % 1000 == 0:
-                    diff = current_milli_time() - self.start
+                    diff = time.time() - self.start
                     print('Pages processed: ' + str(self.counter_all) + ', avg t: ' + str(diff / self.counter_all), end='\r')
         elif tag == 'text':
             self.n += 1

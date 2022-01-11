@@ -17,12 +17,14 @@ def process_article(text, all_tags):
                 entity = match.group(1)
                 parts = entity.split('|')
                 tag = parts[-1]
-                
+
                 if len(parts) >= 3:
                     if tag not in all_tags:
                         all_tags[tag] = 0
 
                     all_tags[tag] += 1
+                else:
+                    print(entity)
 
                 line = line[end:]
             else:

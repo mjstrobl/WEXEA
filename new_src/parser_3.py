@@ -76,7 +76,9 @@ def process_article(text,
                     parts = entity.split('|')
                     alias = parts[-1]
                     line = line[:start] + alias + line[end:]
-
+                else:
+                    break
+                    
             complete_content += '\n' + line
             continue
 

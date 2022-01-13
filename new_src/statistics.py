@@ -5,7 +5,7 @@ import time
 import datetime
 from utils import RE_LINKS
 
-ner_tags = {"DATE","NUMBER","MISC","LOCATION","PERSON","ORGANIZATION",'DURATION','MONEY','PERCENT','TIME'}
+ner_tags = {"SET", "ORDINAL", "PER", "LOC", "ORG", "DATE","NUMBER","MISC","LOCATION","PERSON","ORGANIZATION",'DURATION','MONEY','PERCENT','TIME'}
 
 def process_article(text, all_tags):
     for line in text.split('\n'):
@@ -24,6 +24,7 @@ def process_article(text, all_tags):
                         all_tags[tag] = 0
 
                     all_tags[tag] += 1
+                    all_tags['total'] += 1
                 else:
                     print(entity)
 
@@ -38,7 +39,7 @@ def process_articles(filenames):
 
     counter_all = 0
 
-    all_tags = {}
+    all_tags = {'total':0}
 
     for i in range(len(filenames)):
         filename = filenames[i]

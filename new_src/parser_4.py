@@ -42,7 +42,7 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, cor
                 end = match.end()
                 entity = match.group(1)
                 parts = entity.split('|')
-                if len(parts) != 3 and parts[-1] not in NER_TAGS:
+                if (len(parts) != 3 and parts[-1] not in NER_TAGS) or '[[' in entity or ']]' in entity:
                     #TODO: investigate why this happens, it could be a thumbnail in the middle or end of a paragraph of text. ignore it for now.
                     ignore_line = True
                     break

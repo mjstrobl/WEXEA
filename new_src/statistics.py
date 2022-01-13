@@ -64,18 +64,9 @@ def process_articles(filenames):
 
 
 if (__name__ == "__main__"):
-    config = json.load(open('config/config.json'))
-    num_processes = config['processes']
-    wikipath = config['wikipath']
-    outputpath = config['outputpath']
-    logging_path = config['logging_path']
-    dictionarypath = outputpath + 'dictionaries/'
 
-    language = 'en'
-    if 'language' in config:
-        language = config['language']
 
-    print("LANGUAGE: " + language)
+    dictionarypath = "/media/michi/Data/wexea/final/fr/dictionaries/"
 
     filename2title = json.load(open(dictionarypath + 'filename2title_final.json'))
     filenames = list(filename2title.keys())

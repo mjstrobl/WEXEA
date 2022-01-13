@@ -12,6 +12,8 @@ from entity_linker.readers.vocabloader import VocabLoader
 import tensorflow as tf
 
 ARTICLE_OUTPUTPATH = "articles_final"
+NER_TAGS = {"SET", "ORDINAL", "PER", "LOC", "ORG", "DATE","NUMBER","MISC","LOCATION","PERSON","ORGANIZATION",'DURATION','MONEY','PERCENT','TIME'}
+
 
 def process_article(text, title, corefs, use_entity_linker, aliases_reverse, coref_assignments, reader, model):
 
@@ -40,7 +42,7 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, cor
                 end = match.end()
                 entity = match.group(1)
                 parts = entity.split('|')
-                if len(parts) < 2:
+                if len(parts) != 3 and parts[-1] not in NER_TAGS:
                     #TODO: investigate why this happens, it could be a thumbnail in the middle or end of a paragraph of text. ignore it for now.
                     ignore_line = True
                     break
@@ -300,7 +302,7 @@ if (__name__ == "__main__"):
 
     corefs = json.load(open('data/corefs.json'))
     gender_detector = gender.Detector()
-    use_entity_linker = False
+    use_entity_linker = True
 
     print("Read dictionaries.")
 

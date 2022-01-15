@@ -56,8 +56,6 @@ def process_article(text, all_tags, title):
 
                         all_tags[tag] += 1
                     all_tags['total'] += 1
-                    if all_tags['total'] >= 10000:
-                        return 0
                     line = line[end:]
             else:
                 break

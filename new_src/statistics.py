@@ -7,7 +7,7 @@ from utils import RE_LINKS
 
 ner_tags = {"SET", "ORDINAL", "PER", "LOC", "ORG", "DATE","NUMBER","MISC","LOCATION","PERSON","ORGANIZATION",'DURATION','MONEY','PERCENT','TIME'}
 
-def process_article(text, all_tags):
+def process_article(text, all_tags, title):
     for line in text.split('\n'):
         line = line.strip()
 
@@ -19,34 +19,35 @@ def process_article(text, all_tags):
                 parts = entity.split('|')
                 tag = parts[-1]
 
-                if len(parts) == 3 or tag in ner_tags:
-                    if tag not in all_tags:
-                        all_tags[tag] = 0
-
-                    all_tags[tag] += 1
-                    all_tags['total'] += 1
+                if tag not in all_tags:
+                    all_tags[tag] = 0
+                    
+                if parts[0] == title and tag == 'annotation':
+                    all_tags['title'] += 1
                 else:
-                    print(entity)
+                    all_tags[tag] += 1
+                all_tags['total'] += 1
 
                 line = line[end:]
             else:
                 break
 
-def process_articles(filenames):
+def process_articles(filenames, filename2title):
     start_time = time.time()
 
     print('start processing')
 
     counter_all = 0
 
-    all_tags = {'total':0}
+    all_tags = {'total':0, 'title': 0}
 
     for i in range(len(filenames)):
         filename = filenames[i]
-
+        title = filename2title[filename]
+        #filename = filename.replace("articles_final","articles_2")
         with open(filename) as f:
             text = f.read()
-            process_article(text,all_tags)
+            process_article(text,all_tags,title)
 
         counter_all += 1
         if counter_all % 1000 == 0:
@@ -67,9 +68,9 @@ def process_articles(filenames):
 if (__name__ == "__main__"):
 
 
-    dictionarypath = "/media/michi/Data/wexea/final/fr/dictionaries/"
+    dictionarypath = "/local/melco2/mstrobl/wexea/final/fr/dictionaries/"
 
     filename2title = json.load(open(dictionarypath + 'filename2title_final.json'))
     filenames = list(filename2title.keys())
 
-    process_articles(filenames)
+    process_articles(filenames,filename2title)

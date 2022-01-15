@@ -7,6 +7,14 @@ from utils import RE_LINKS
 
 ner_tags = {"SET", "ORDINAL", "PER", "LOC", "ORG", "DATE","NUMBER","MISC","LOCATION","PERSON","ORGANIZATION",'DURATION','MONEY','PERCENT','TIME'}
 
+tags = {'title':'article_entity', 'article_entity':"article_entity", 'annotation':'annotation',
+        'popular_redirect':'popular', 'popular_entity':'popular','multiple_candidates':'multiple', 
+        'seen_entity':'single', 'multiple_line_candidates':'multiple','acronym_ner':'acronym', 'acronym_entity':'acronym',
+        'single_candidate':'single','match_candidate':'single', 'single_line_candidate':'single', 
+        'redirect_candidate':'single','coref':'coref','disambiguation':'disambiguation','acronym':'acronym'}
+
+ner_ignore = {'NUMBER','SET','MONEY','PERCENT','ORDINAL'}
+
 def process_article(text, all_tags, title):
     for line in text.split('\n'):
         line = line.strip()
@@ -18,19 +26,42 @@ def process_article(text, all_tags, title):
                 entity = match.group(1)
                 parts = entity.split('|')
                 tag = parts[-1]
-
-                if tag not in all_tags:
-                    all_tags[tag] = 0
-                    
-                if parts[0] == title and tag == 'annotation':
-                    all_tags['title'] += 1
+                
+                for ignore in ner_ignore:
+                    if ignore in tag:
+                        tag = ignore
+                        break
+                
+                if tag in ner_ignore:
+                    line = line[end:]
                 else:
-                    all_tags[tag] += 1
-                all_tags['total'] += 1
 
-                line = line[end:]
+                    if parts[0] == title and tag == 'annotation':
+                        all_tags['title'] += 1
+                    else:
+                        for ignore in ner_ignore:
+                            if ignore in tag:
+                                tag = ignore
+                                break
+
+                        for t in tags:
+                            if tag.endswith(t):
+                                tag = tags[t]
+                                break
+                    
+                        if tag in ner_tags:
+                            tag = "NER"
+                        if tag not in all_tags:
+                            all_tags[tag] = 0
+
+                        all_tags[tag] += 1
+                    all_tags['total'] += 1
+                    if all_tags['total'] >= 10000:
+                        return 0
+                    line = line[end:]
             else:
                 break
+    return 1
 
 def process_articles(filenames, filename2title):
     start_time = time.time()
@@ -47,7 +78,8 @@ def process_articles(filenames, filename2title):
         #filename = filename.replace("articles_final","articles_2")
         with open(filename) as f:
             text = f.read()
-            process_article(text,all_tags,title)
+            if process_article(text,all_tags,title) == 0:
+                break
 
         counter_all += 1
         if counter_all % 1000 == 0:
@@ -68,7 +100,7 @@ def process_articles(filenames, filename2title):
 if (__name__ == "__main__"):
 
 
-    dictionarypath = "/local/melco2/mstrobl/wexea/final/fr/dictionaries/"
+    dictionarypath = "/local/melco2/mstrobl/wexea/final/es/dictionaries/"
 
     filename2title = json.load(open(dictionarypath + 'filename2title_final.json'))
     filenames = list(filename2title.keys())

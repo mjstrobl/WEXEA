@@ -35,14 +35,12 @@ def process_article(text, all_tags, title):
                         tag = ignore
                         break
 
-
-                
                 if tag in ner_ignore:
                     line = line[end:]
                 else:
 
                     if parts[0] == title and tag == 'annotation':
-                        all_tags['title'] += 1
+                        all_tags['article_entity'] += 1
                     else:
                         for ignore in ner_ignore:
                             if ignore in tag:

@@ -26,11 +26,16 @@ def process_article(text, all_tags, title):
                 entity = match.group(1)
                 parts = entity.split('|')
                 tag = parts[-1]
+
+                if 'disambiguation' in tag:
+                    tag = tag.split("_")[0]
                 
                 for ignore in ner_ignore:
                     if ignore in tag:
                         tag = ignore
                         break
+
+
                 
                 if tag in ner_ignore:
                     line = line[end:]

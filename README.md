@@ -26,12 +26,23 @@ java -mx16g -cp "<path to corenlp files>" edu.stanford.nlp.pipeline.StanfordCore
 
 ## Entity Linker
 
+<<<<<<< HEAD
 (English only, not relevant for other languages)
+=======
+1. Install requirements from requirements_basic.txt
+2. In config/config.json, provide path of latest wiki dump (xml file) and output path (make sure the output folder does not exist yet, it will be created).
+3. Make annotate_basic.sh executable: "chmod 755 annotate_basic.sh"
+4. Run annotate_basic.sh with ./annotate_basic.sh
+>>>>>>> master
 
 Entity Linker including models used from https://github.com/nitishgupta/neural-el. 
 
 Download resources from repository and adjust path to resources folder in ```src/entity_linker/configs/config.ini```.
 
+<<<<<<< HEAD
+=======
+This version uses the neural Entity Linker from https://github.com/nitishgupta/neural-el with small modifications (mainly a predefined set of candidates per entity mention with entities linked in the current article is used and the NER module is removed).
+>>>>>>> master
 
 ## Run WEXEA
 
@@ -45,6 +56,16 @@ Download resources from repository and adjust path to resources folder in ```src
 
 Entity Linker including models used from https://github.com/nitishgupta/neural-el. 
 Download resources from repository and adjust path to resources folder in src/entity_linker/configs/config.ini.
+
+https://gist.github.com/batzner/7c24802dd9c5e15870b4b56e22135c96
+
+
+1. Install from requirements.txt
+2. Download the resources folder from https://github.com/nitishgupta/neural-el and set path to models in src/entity_linker/configs/config.ini
+3. In config/config.json, provide path of latest wiki dump (xml file) and output path.
+4. Since neural-el used models from a tensorflow version with variable names that are not compatible with more recent versions, run src/tf_rename_variables.py with appropriate parameters.
+5. Make annotate.sh executable: "chmod 755 annotate.sh"
+6. Run annotate.sh with ./annotate.sh
 
 ## Visualization
 

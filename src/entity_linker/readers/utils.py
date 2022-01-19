@@ -1,5 +1,5 @@
 """
-Modifications copyright (C) 2022 Michael Strobl
+Modifications copyright (C) 2020 Michael Strobl
 """
 
 import re

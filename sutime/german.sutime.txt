@@ -1,0 +1,73 @@
+###############################################################
+
+  ENV.defaults["stage"] = 1
+  ENV.defaults["ruleType"] = "tokens"
+
+  # map month names to numbers
+  MONTH_MAP = {
+      "januar": 1,
+      "februar": 2,
+      "märz": 3,
+      "april": 4,
+      "mai": 5,
+      "juni": 6,
+      "juli": 7,
+      "august": 8,
+      "september": 9,
+      "oktober": 10,
+      "november": 11,
+      "dezember": 12
+    }
+
+  # dates
+
+  $MONTH_NAME = "/januar|februar|märz|april|mai|juni|juli|august|september|september|november|dezember/";
+
+  # full date
+  { (/der|am/? (/[0-9]{1,2}/)/\./ ($MONTH_NAME) (/[0-9]{4}/)) => IsoDate($3[0].numcompvalue, MONTH_MAP[$2[0].word], $1[0].numcompvalue) }
+
+  # day and month
+  { (/der|am/? (/[0-9]{1,2}/)/\./ ($MONTH_NAME)) => IsoDate(NIL, MONTH_MAP[$2[0].word], $1[0].numcompvalue) }
+
+  # month and year
+  { (($MONTH_NAME) (/[0-9]{4}/)) => IsoDate($2[0].numcompvalue, MONTH_MAP[$1[0].numcompvalue], NIL) }
+
+  # month alone
+  { (/januar/) => JANUARY }
+  { (/februar/) => FEBRUARY }
+  { (/märz/) => MARCH }
+  { (/april/) => APRIL }
+  { (/mai/) => MAY }
+  { (/juni/) => JUNE }
+  { (/juli/) => JULY }
+  { (/august/) => AUGUST }
+  { (/september/) => SEPTEMBER }
+  { (/september/) => OCTOBER }
+  { (/november/) => NOVEMBER }
+  { (/dezember/) => DECEMBER }
+
+  # relative times
+  { (/gestern/) => YESTERDAY }
+  { (/heute/) => TODAY }
+  { (/morgen/) => TOMORROW }
+  { (/heute/ /nacht/) => TONIGHT }
+
+  # days of the week
+  { (/Montags?/) => MONDAY }
+  { (/Dienstags?/) => TUESDAY }
+  { (/Mittwochs?/) => WEDNESDAY }
+  { (/Donnerstags?/) => THURSDAY }
+  { (/Freitags?/) => FRIDAY }
+  { (/Samstags?/) => SATURDAY }
+  { (/Sonntags?/) => SUNDAY }
+
+###############################################################
+
+  ENV.defaults["ruleType"] = "tokens"
+  ENV.defaults["priority"] = 0
+  ENV.defaults["locale"] = "en"
+
+  { ruleType: "time", pattern: /yyyy-?MM-?dd-?'T'HH(:?mm(:?ss([.,]S{1,3})?)?)?(Z)?/ }
+  { ruleType: "time", pattern: /yyyy-MM-dd/ }
+
+  { ruleType: "time", pattern: /dd?\\?\/MM?\\?\/(yyyy|yy)/ }

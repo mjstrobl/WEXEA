@@ -24,9 +24,9 @@ class JointContextModel(Model):
         '''
         self.num_layers = num_layers
         self.dropout_keep_prob = dropout_keep_prob
-        with tf.variable_scope(scope_name) as s:
+        with tf.compat.v1.variable_scope(scope_name) as s:
             with tf.device(device) as d:
-                self.joint_weights = tf.get_variable(
+                self.joint_weights = tf.compat.v1.get_variable(
                   name="joint_context_layer",
                   shape=[2*context_encoded_dim, context_encoded_dim],
                   initializer=tf.random_normal_initializer(mean=0.0,
@@ -40,7 +40,7 @@ class JointContextModel(Model):
 
                 self.hidden_layers = []
                 for i in range(1, self.num_layers):
-                    weight_matrix = tf.get_variable(
+                    weight_matrix = tf.compat.v1.get_variable(
                       name="joint_context_hlayer_"+str(i),
                       shape=[context_encoded_dim, context_encoded_dim],
                       initializer=tf.random_normal_initializer(

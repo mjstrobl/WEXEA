@@ -15,7 +15,7 @@ ARTICLE_OUTPUTPATH = "articles_final"
 NER_TAGS = {"SET", "ORDINAL", "PER", "LOC", "ORG", "DATE","NUMBER","MISC","LOCATION","PERSON","ORGANIZATION",'DURATION','MONEY','PERCENT','TIME'}
 
 
-def process_article(text, title, corefs, use_entity_linker, aliases_reverse, coref_assignments, reader, model):
+def process_article(text, title, corefs, aliases_reverse, coref_assignments, reader, model):
 
     current_corefs = {}
     complete_content = ''
@@ -46,9 +46,8 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, cor
                     #TODO: investigate why this happens, it could be a thumbnail in the middle or end of a paragraph of text. ignore it for now.
                     ignore_line = True
                     break
+
                 alias = parts[-2]
-
-
 
                 if ("multiple" in parts[-1] or 'part_of_seen_entity' in parts[-1]) and '###' in parts[0]:
                     # use entity linker, which we will deal with later
@@ -125,61 +124,60 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, cor
             el_text = line
 
             disambiguated = False
-            if use_entity_linker:
-                try:
-                    for i in reversed(range(len(el_idxs))):
-                        position = positions[el_idxs[i]]
-                        start = position[0]
-                        length = position[1]
-                        parts = position[2]
+            try:
+                for i in reversed(range(len(el_idxs))):
+                    position = positions[el_idxs[i]]
+                    start = position[0]
+                    length = position[1]
+                    parts = position[2]
 
-                        el_text = el_text[:start] + '[[' + '|'.join(parts) + ']]' + el_text[start+length:]
+                    el_text = el_text[:start] + '[[' + '|'.join(parts) + ']]' + el_text[start+length:]
 
-                    reader.loadTestDoc(el_text)
+                reader.loadTestDoc(el_text)
 
-                    mentions = reader.mentions
+                mentions = reader.mentions
 
-                    if reader.disambiguations_counter > 0:
-                        # print(reader.disambiguations_counter)
-                        (predTypScNPmat_list,
-                         widIdxs_list,
-                         priorProbs_list,
-                         textProbs_list,
-                         jointProbs_list,
-                         evWTs_list,
-                         pred_TypeSetsList) = model.doInference()
+                if reader.disambiguations_counter > 0:
+                    # print(reader.disambiguations_counter)
+                    (predTypScNPmat_list,
+                     widIdxs_list,
+                     priorProbs_list,
+                     textProbs_list,
+                     jointProbs_list,
+                     evWTs_list,
+                     pred_TypeSetsList) = model.doInference()
 
-                    new_mentions = {}
-                    mentionnum = 0
-                    for i in range(len(mentions)):
-                        mention = mentions[i]
-                        alias = mention.surface
-                        mention_start = mention.char_start
-                        mention_length = mention.link_len
-                        sent_idx = mention.sentence_idx
-                        mention_type = mention.type
+                new_mentions = {}
+                mentionnum = 0
+                for i in range(len(mentions)):
+                    mention = mentions[i]
+                    alias = mention.surface
+                    mention_start = mention.char_start
+                    mention_length = mention.link_len
+                    sent_idx = mention.sentence_idx
+                    mention_type = mention.type
 
-                        if sent_idx not in new_mentions:
-                            new_mentions[sent_idx] = []
+                    if sent_idx not in new_mentions:
+                        new_mentions[sent_idx] = []
 
-                        if i in reader.disambiguations and len(mention.entities) > 1:
+                    if i in reader.disambiguations and len(mention.entities) > 1:
 
-                            [evWTs, evWIDS, evProbs] = evWTs_list[mentionnum]
-                            disambiguation = mention.wikititles[evWIDS[2]]
-                            entity = disambiguation
-                            mentionnum += 1
-                        else:
-                            entity = mention.entities[0]
+                        [evWTs, evWIDS, evProbs] = evWTs_list[mentionnum]
+                        disambiguation = mention.wikititles[evWIDS[2]]
+                        entity = disambiguation
+                        mentionnum += 1
+                    else:
+                        entity = mention.entities[0]
 
-                        position = positions[el_idxs[i]]
-                        start = position[0]
-                        length = position[1]
-                        parts = position[2]
-                        positions[el_idxs[i]] = (start, length, [entity, parts[-2], parts[-1]])
+                    position = positions[el_idxs[i]]
+                    start = position[0]
+                    length = position[1]
+                    parts = position[2]
+                    positions[el_idxs[i]] = (start, length, [entity, parts[-2], parts[-1]])
 
-                    disambiguated = True
-                except:
-                    disambiguated = False
+                disambiguated = True
+            except:
+                disambiguated = False
 
             if not disambiguated:
                 for i in reversed(range(len(el_idxs))):
@@ -223,7 +221,7 @@ def process_article(text, title, corefs, use_entity_linker, aliases_reverse, cor
         f.write(complete_content.strip())
 
 
-def process_articles(filename2title,filenames, logging_path, corefs, use_entity_linker, aliases_reverse, coref_assignments, reader, model):
+def process_articles(filename2title,filenames, corefs, aliases_reverse, coref_assignments, reader, model):
     start_time = time.time()
 
     print('start processing')
@@ -232,24 +230,20 @@ def process_articles(filename2title,filenames, logging_path, corefs, use_entity_
 
     new_filename2title = {}
 
-    logger = open(logging_path + "process_logger.txt", 'w')
-
     for i in range(len(filenames)):
         filename = filenames[i]
         title = filename2title[filename]
+
+        #filename = filename.replace('articles_2','articles_3')
+
         new_filename, _, _, _ = create_filename(title, outputpath + ARTICLE_OUTPUTPATH + '/')
         new_filename2title[new_filename] = title
 
-        logger.write("Start with file: " + new_filename + "\n")
-
         if not os.path.isfile(new_filename):
-            with open(filename) as f:
-                text = f.read()
-                process_article(text,title,corefs, use_entity_linker, aliases_reverse, coref_assignments, reader, model)
-
-            logger.write("File done: " + new_filename + "\n")
-        else:
-            logger.write("File exists: " + new_filename + "\n")
+            if os.path.isfile(filename):
+                with open(filename) as f:
+                    text = f.read()
+                    process_article(text,title,corefs, aliases_reverse, coref_assignments, reader, model)
 
         counter_all += 1
         if counter_all % 1000 == 0:
@@ -265,15 +259,12 @@ def process_articles(filename2title,filenames, logging_path, corefs, use_entity_
     elapsed_time = end_time - start_time
     print("elapsed time: %s" % str(datetime.timedelta(seconds=elapsed_time)))
 
-    logger.close()
-
 
 if (__name__ == "__main__"):
     config = json.load(open('config/config.json'))
     num_processes = config['processes']
     wikipath = config['wikipath']
     outputpath = config['outputpath']
-    logging_path = config['logging_path']
     dictionarypath = outputpath + 'dictionaries/'
     articlepath = outputpath + ARTICLE_OUTPUTPATH + '/'
     try:
@@ -302,96 +293,92 @@ if (__name__ == "__main__"):
 
     corefs = json.load(open('data/corefs.json'))
     gender_detector = gender.Detector()
-    use_entity_linker = True
 
     print("Read dictionaries.")
 
-    reader = None
-    model = None
-    if use_entity_linker:
-        config_proto = tf.compat.v1.ConfigProto()
-        config_proto.allow_soft_placement = True
-        config_proto.gpu_options.allow_growth = True
+    config_proto = tf.compat.v1.ConfigProto()
+    config_proto.allow_soft_placement = True
+    config_proto.gpu_options.allow_growth = True
 
-        tf.compat.v1.disable_eager_execution()
+    tf.compat.v1.disable_eager_execution()
 
-        checkpoint_dir = config['original_el_model']
+    checkpoint_dir = config['original_el_model']
+    model_checkpoint_path = config['neural_el_model']
+    replace_from = 'RNN/MultiRNNCell/Cell0/BasicLSTMCell'
+    replace_to = 'rnn/multi_rnn_cell/cell_0/basic_lstm_cell'
+    add_prefix = None
+    state_dict = {}
+    with tf.compat.v1.Session() as sess:
+        # with sess.as_default():
+
+        checkpoint = tf.train.get_checkpoint_state(checkpoint_dir)
+        for var_name, _ in tf.train.list_variables(checkpoint_dir):
+            # Load the variable
+            var = tf.train.load_variable(checkpoint_dir, var_name)
+
+            # Set the new name
+            new_name = var_name
+            if None not in [replace_from, replace_to]:
+                new_name = new_name.replace(replace_from, replace_to)
+                new_name = new_name.lower()
+                new_name = new_name.replace('linear/matrix', 'kernel')
+                new_name = new_name.replace('linear/bias', 'bias')
+            if add_prefix:
+                new_name = add_prefix + new_name
+
+            if new_name != var_name:
+                print('Renaming %s to %s.' % (var_name, new_name))
+            var = tf.Variable(var, name=new_name)
+
+        # Save the variables
+        saver = tf.compat.v1.train.Saver()
+        sess.run(tf.compat.v1.global_variables_initializer())
+        saver.save(sess, model_checkpoint_path)
+
+    tf.compat.v1.reset_default_graph()
+
+    with tf.compat.v1.Session() as sess:
+        config_el = Config('new_src/entity_linker/configs/config.ini', verbose=False)
+        vocabloader = VocabLoader(config_el)
+        reader = InferenceReader(config=config_el,
+                                 vocabloader=vocabloader,
+                                 num_cands=30,
+                                 batch_size=1,
+                                 strict_context=False,
+                                 pretrain_wordembed=True,
+                                 coherence=True)
+
+        model = ELModel(
+            sess=sess, reader=reader,
+            max_steps=32000,
+            pretrain_max_steps=32000,
+            word_embed_dim=300,
+            context_encoded_dim=100,
+            context_encoder_num_layers=1,
+            context_encoder_lstmsize=100,
+            coherence_numlayers=1,
+            jointff_numlayers=1,
+            learning_rate=0.005,
+            dropout_keep_prob=1.0,
+            reg_constant=0.00,
+            checkpoint_dir="/tmp",
+            optimizer='adam',
+            strict=False,
+            pretrain_word_embed=True,
+            typing=True,
+            el=True,
+            coherence=True,
+            textcontext=True,
+            WDLength=100,
+            Fsize=5,
+            entyping=False)
+
+        model_var_dict = {}
+
         model_checkpoint_path = config['neural_el_model']
-        replace_from = 'RNN/MultiRNNCell/Cell0/BasicLSTMCell'
-        replace_to = 'rnn/multi_rnn_cell/cell_0/basic_lstm_cell'
-        add_prefix = None
-        state_dict = {}
-        with tf.compat.v1.Session() as sess:
-            # with sess.as_default():
+        saver = tf.compat.v1.train.Saver()
+        saver.restore(sess, model_checkpoint_path)
 
-            checkpoint = tf.train.get_checkpoint_state(checkpoint_dir)
-            for var_name, _ in tf.train.list_variables(checkpoint_dir):
-                # Load the variable
-                var = tf.train.load_variable(checkpoint_dir, var_name)
+        tf.compat.v1.get_default_graph().finalize()
 
-                # Set the new name
-                new_name = var_name
-                if None not in [replace_from, replace_to]:
-                    new_name = new_name.replace(replace_from, replace_to)
-                    new_name = new_name.lower()
-                    new_name = new_name.replace('linear/matrix', 'kernel')
-                    new_name = new_name.replace('linear/bias', 'bias')
-                if add_prefix:
-                    new_name = add_prefix + new_name
-
-                if new_name != var_name:
-                    print('Renaming %s to %s.' % (var_name, new_name))
-                var = tf.Variable(var, name=new_name)
-
-            # Save the variables
-            saver = tf.compat.v1.train.Saver()
-            sess.run(tf.compat.v1.global_variables_initializer())
-            saver.save(sess, model_checkpoint_path)
-
-        tf.compat.v1.reset_default_graph()
-
-        with tf.compat.v1.Session() as sess:
-            config_el = Config('new_src/entity_linker/configs/config.ini', verbose=False)
-            vocabloader = VocabLoader(config_el)
-            reader = InferenceReader(config=config_el,
-                                     vocabloader=vocabloader,
-                                     num_cands=30,
-                                     batch_size=1,
-                                     strict_context=False,
-                                     pretrain_wordembed=True,
-                                     coherence=True)
-
-            model = ELModel(
-                sess=sess, reader=reader,
-                max_steps=32000,
-                pretrain_max_steps=32000,
-                word_embed_dim=300,
-                context_encoded_dim=100,
-                context_encoder_num_layers=1,
-                context_encoder_lstmsize=100,
-                coherence_numlayers=1,
-                jointff_numlayers=1,
-                learning_rate=0.005,
-                dropout_keep_prob=1.0,
-                reg_constant=0.00,
-                checkpoint_dir="/tmp",
-                optimizer='adam',
-                strict=False,
-                pretrain_word_embed=True,
-                typing=True,
-                el=True,
-                coherence=True,
-                textcontext=True,
-                WDLength=100,
-                Fsize=5,
-                entyping=False)
-
-            model_var_dict = {}
-
-            model_checkpoint_path = config['neural_el_model']
-            saver = tf.compat.v1.train.Saver()
-            saver.restore(sess, model_checkpoint_path)
-
-            tf.compat.v1.get_default_graph().finalize()
-
-    process_articles(filename2title,filenames, logging_path, corefs, use_entity_linker, aliases_reverse, coref_assignments, reader, model)
+    process_articles(filename2title,filenames, corefs, aliases_reverse, coref_assignments, reader, model)

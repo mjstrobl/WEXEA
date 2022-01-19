@@ -71,9 +71,9 @@ def process_articles(filenames, filename2title):
 
     counter_all = 0
 
-    all_tags = {'total':0, 'title': 0}
+    all_tags = {'total':0, 'article_entity': 0}
 
-    for i in range(len(filenames)):
+    for i in reversed(range(len(filenames))):
         filename = filenames[i]
         title = filename2title[filename]
         #filename = filename.replace("articles_final","articles_2")
@@ -101,7 +101,7 @@ def process_articles(filenames, filename2title):
 if (__name__ == "__main__"):
 
 
-    dictionarypath = "/local/melco2/mstrobl/wexea/final/es/dictionaries/"
+    dictionarypath = "/media/michi/Data/wexea/final/en/dictionaries/"
 
     filename2title = json.load(open(dictionarypath + 'filename2title_final.json'))
     filenames = list(filename2title.keys())

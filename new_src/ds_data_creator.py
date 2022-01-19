@@ -1,6 +1,5 @@
 import json
 import os
-import glob
 import re
 
 language = 'en'
@@ -10,7 +9,7 @@ RE_LINKS = re.compile(r'\[{2}(.*?)\]{2}', re.DOTALL | re.UNICODE)
 dbpedia_data_filename = "/media/michi/Data/datasets/dbpedia/infobox-properties_lang=" + language + ".ttl"
 dbpedia_labels_filename = "/media/michi/Data/datasets/dbpedia/labels_lang=" + language + ".ttl"
 dbpedia_ids_filename = "/media/michi/Data/datasets/dbpedia/page_lang=" + language + "_ids.ttl"
-id2title = json.load(open('/media/michi/Data/wexea/final/' + language + '/dictionaries/id2title_pruned.json'))
+id2title = json.load(open('/media/michi/Data/wexea/final/' + language + '/en/dictionaries/id2title.json'))
 
 def getRelevantPairs():
     relevant_pairs_filename = '/media/michi/Data/wikipedia/relevant_pairs_dbpedia_' + language + '.json'
@@ -161,22 +160,41 @@ def find(type,w_pairs,relevant_pairs):
     relation_matches = {}
     relation_matches_unique = {}
 
-    annotations = 0
-    pairs = 0
-
     for pair in w_pairs:
         if pair in relevant_pairs:
             c = w_pairs[pair]
-            pairs += c
             relations = relevant_pairs[pair]
             for relation in relations:
-                if relation not in relation_matches_unique:
-                    relation_matches_unique[relation] = set()
-                relation_matches_unique[relation].add(pair)
                 if relation not in relation_matches:
                     relation_matches[relation] = 0
                 relation_matches[relation] += c
-                annotations += c
+
+    all_relations = set()
+    for relation in relation_matches:
+        if relation_matches[relation] >= 100:
+            all_relations.add(relation)
+
+    annotations = 0
+    pairs = 0
+    relation_matches = {}
+    for pair in w_pairs:
+        if pair in relevant_pairs:
+            c = w_pairs[pair]
+
+            relations = relevant_pairs[pair]
+            consider_pair = False
+            for relation in relations:
+                if relation in all_relations:
+                    consider_pair = True
+                    if relation not in relation_matches_unique:
+                        relation_matches_unique[relation] = set()
+                    relation_matches_unique[relation].add(pair)
+                    if relation not in relation_matches:
+                        relation_matches[relation] = 0
+                    relation_matches[relation] += c
+                    annotations += c
+            if consider_pair:
+                pairs += c
 
     print('Annotations including all relations: ' + str(annotations))
     print('Pairs found: ' + str(pairs))

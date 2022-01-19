@@ -132,3 +132,4 @@ dmypy.json
 *.json
 config/config.json
 *logger.txt
+*.zip

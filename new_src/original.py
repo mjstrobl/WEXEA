@@ -22,7 +22,8 @@ def process_article(text, counters, title):
                 entity = parts[0]
                 tag = parts[-1]
                 if entity != title and tag == "annotation":
-                    counters['mentions'] += 1
+                    counters['original'] += 1
+                counters['mentions'] += 1
                 line = line[end:]
             else:
                 break
@@ -34,7 +35,7 @@ def process_articles(filenames,filename2title):
 
     counter_all = 0
 
-    counters = {'mentions':0, 'articles':0, 'lines':0}
+    counters = {'original':0,'mentions':0, 'articles':0, 'lines':0}
 
     for i in range(len(filenames)):
         filename = filenames[i]
@@ -66,7 +67,7 @@ def process_articles(filenames,filename2title):
 if (__name__ == "__main__"):
 
 
-    dictionarypath = "/local/melco2/mstrobl/wexea/final/es/dictionaries/"
+    dictionarypath = "/media/michi/Data/wexea/final/en/dictionaries/"
 
     filename2title = json.load(open(dictionarypath + 'filename2title_final.json'))
     filenames = list(filename2title.keys())

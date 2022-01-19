@@ -4,7 +4,7 @@ import re
 '''
 ENGLISH
 '''
-'''
+
 CATEGORY = "category"
 LIST = "list of"
 REDIRECT = "redirect"
@@ -36,7 +36,7 @@ RE_NUMBER_DISAMBIGUATIONS = '{{number disambiguation\||\|number disambiguation}}
 RE_STUB = 'stub}}'
 GIVEN_NAMES = '{{given name}}', '[[Category:Given names]]', '[[Category:Masculine given names]]', '[[Category:Feminine given names]]'
 SURNAMES = '{{surname}}', '[[Category:Surnames]]'
-'''
+
 
 '''
 FRENCH
@@ -111,7 +111,7 @@ SURNAMES = '{{apellidos}}', '[[Categoría:Apellidos]]'
 '''
 GERMAN
 '''
-
+'''
 CATEGORY = "kategorie"
 LIST = "liste "
 REDIRECT = "weiterleitung"
@@ -143,7 +143,7 @@ RE_NUMBER_DISAMBIGUATIONS = '{{number disambiguation\||\|number disambiguation}}
 RE_STUB = 'lückenhaft}}'
 GIVEN_NAMES = '{{given name}}', '[[Kategorie:Vorname]]', '[[Kategorie:Männlicher Vorname]]', '[[Kategorie:Weiblicher Vorname]]'
 SURNAMES = '{{surname}}', '[[Kategorie:Familienname]]'
-
+'''
 
 
 

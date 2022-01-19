@@ -1,6 +1,6 @@
 import json
 
-dictionary_path = ''
+dictionary_path = '/media/michi/Data/wexea/final/en/dictionaries/'
 
 disambiguations_geo = json.load(open(dictionary_path + 'disambiguations_geo.json'))
 disambiguations_human = json.load(open(dictionary_path + 'disambiguations_human.json'))

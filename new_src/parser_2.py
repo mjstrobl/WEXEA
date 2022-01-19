@@ -202,10 +202,10 @@ def merge_aliases(partial_aliases, aliases):
 
 def merge_links(partial_dict, dict):
     for key in partial_dict:
-
+        entities = partial_dict[key]
+        key = int(key)
         if key not in dict:
             dict[key] = {}
-        entities = partial_dict[key]
         for entity in entities:
             if entity not in dict[key]:
                 dict[key][entity] = 0
@@ -439,7 +439,7 @@ def merge_all_dictionaries(all_titles,title2Id, num_processes, dictionarypath):
 
     with open(dictionarypath + 'links_pruned.json', 'w') as f:
         json.dump(links_pruned, f)
-    with open(dictionarypath + 'title2Id_pruned.json', 'w') as f:
+    with open(dictionarypath + 'title2id_pruned.json', 'w') as f:
         json.dump(new_title2Id, f)
     with open(dictionarypath + 'id2title_pruned.json', 'w') as f:
         json.dump(id2title, f)

@@ -5,14 +5,16 @@ import threading
 import webbrowser
 from http.server import HTTPServer,SimpleHTTPRequestHandler
 
-config = json.load(open('config/config.json'))
+config = json.load(open('../config/config.json'))
 outputpath = config['outputpath']
+
+#outputpath = outputpath.replace('/final','')
 
 TITLE2FILENAME_PATH = outputpath + "dictionaries/title2filename.json"
 TITLE2ID_PATH = outputpath + "dictionaries/title2Id.json"
 WIKILINK = 'https://en.wikipedia.org/?curid='
 
-FILE = '../frontend.html'
+FILE = 'frontend.html'
 PORT = 8080
 
 title2filename = json.load(open(TITLE2FILENAME_PATH))
@@ -34,29 +36,30 @@ def process_line(line,doc, tag, text):
             alias = tokens[1]
             type = tokens[-1]
 
-            if entity in title2id:
+
+            if len(tokens) == 2:
+                alias = tokens[0]
+
+            if entity in title2id and len(tokens) > 2:
                 id = title2id[entity]
                 link = WIKILINK + str(id)
-                klass = 'annotated'
-                '''if type == 'COREF':
-                    klass = 'coref'
-                el'''
+                klass = 'annotation'
                 if type == 'RARE_ANNOTATION':
                     klass = 'annotation'
                 elif type == 'ANNOTATION':
                     klass = 'annotation'
-                '''elif type == 'UNKNOWN':
-                    klass = 'unknown'
-                elif type == 'REDIRECT':
-                    klass = 'annotated'
-                '''
-
 
                 with tag('a',('href',link),('target','_blank'),klass=klass):
-                    text(alias)
+                    if len(before.strip()) == 0:
+                        text(before + alias)
+                    else:
+                        text(alias)
             else:
                 with tag('font', ('color', 'green')):
-                    text(alias)
+                    if len(before.strip()) == 0:
+                        text(before + alias)
+                    else:
+                        text(alias)
 
             line = after
         else:

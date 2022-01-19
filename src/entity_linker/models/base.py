@@ -48,10 +48,10 @@ class Model(object):
         print(" [*] Saving done...")
 
     def initialize(self, log_dir="./logs"):
-        self.merged_sum = tf.merge_all_summaries()
-        self.writer = tf.train.SummaryWriter(log_dir, self.sess.graph_def)
+        self.merged_sum = tf.compat.v1.merge_all_summaries()
+        self.writer = tf.compat.v1.train.SummaryWriter(log_dir, self.sess.graph_def)
 
-        tf.initialize_all_variables().run()
+        tf.compat.v1.initialize_all_variables().run()
         self.load(self.checkpoint_dir)
 
         start_iter = self.step.eval()
@@ -77,6 +77,7 @@ class Model(object):
         assert ckptPath != None
         print(" [#] CKPT Path : {}".format(ckptPath))
         if os.path.exists(ckptPath):
+            self.sess.run(tf.compat.v1.global_variables_initializer())
             saver.restore(self.sess, ckptPath)
             print(" [*] Load SUCCESS")
             return True
@@ -101,9 +102,9 @@ class Model(object):
 
 
 
-    def collect_scope(self, scope_name, graph=None, var_type=tf.GraphKeys.VARIABLES):
+    def collect_scope(self, scope_name, graph=None, var_type=tf.compat.v1.GraphKeys.VARIABLES):
         if graph == None:
-            graph = tf.get_default_graph()
+            graph = tf.compat.v1.get_default_graph()
 
         var_list = graph.get_collection(var_type, scope=scope_name)
 

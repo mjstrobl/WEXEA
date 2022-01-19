@@ -27,14 +27,14 @@ class CoherenceModel(Model):
         self.dropout_keep_prob = dropout_keep_prob
         self.batch_size = batch_size
 
-        with tf.variable_scope(scope_name) as s, tf.device(device) as d:
+        with tf.compat.v1.variable_scope(scope_name) as s, tf.device(device) as d:
             coherence_inp_tensor = tf.SparseTensor(coherence_indices,
                                                    coherence_values,
                                                    coherence_matshape)
 
             # Feed-forward Net for coherence_representation
             # Layer 1
-            self.trans_weights = tf.get_variable(
+            self.trans_weights = tf.compat.v1.get_variable(
               name="coherence_layer_0",
               shape=[self.input_size, self.context_encoded_dim],
               initializer=tf.random_normal_initializer(
@@ -42,14 +42,14 @@ class CoherenceModel(Model):
                 stddev=1.0/(100.0)))
 
             # [B, context_encoded_dim]
-            coherence_encoded = tf.sparse_tensor_dense_matmul(
+            coherence_encoded = tf.compat.v1.sparse_tensor_dense_matmul(
               coherence_inp_tensor, self.trans_weights)
             coherence_encoded = tf.nn.relu(coherence_encoded)
 
             # Hidden Layers. NumLayers >= 2
             self.hidden_layers = []
             for i in range(1, self.num_layers):
-                weight_matrix = tf.get_variable(
+                weight_matrix = tf.compat.v1.get_variable(
                   name="coherence_layer_"+str(i),
                   shape=[self.context_encoded_dim, self.context_encoded_dim],
                   initializer=tf.random_normal_initializer(
@@ -64,5 +64,5 @@ class CoherenceModel(Model):
                                               self.hidden_layers[i-1])
                 coherence_encoded = tf.nn.relu(coherence_encoded)
 
-            self.coherence_encoded = tf.nn.dropout(
+            self.coherence_encoded = tf.compat.v1.nn.dropout(
                 coherence_encoded, keep_prob=self.dropout_keep_prob)

@@ -128,7 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-
 # other files
+.idea
+*.json
+config/config.json
+*logger.txt
 *.zip
-.idea/

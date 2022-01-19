@@ -76,12 +76,15 @@ class InferenceReader(object):
 
   #*******************      END __init__      *********************************
 
-    def loadTestDoc(self,test_mens_file):
+    def loadTestDoc(self,article_text):
         #print("[#] Test Mentions File : {}".format(test_mens_file))
 
         #print("[#] Loading test file and preprocessing ... ")
 
-        self.processTestDoc(test_mens_file)
+        self.disambiguations_counter = 0
+
+
+        self.processTestDoc(article_text)
         self.mention_lines = self.convertSent2NerToMentionLines()
         self.mentions = []
         for line in self.mention_lines:
@@ -92,6 +95,7 @@ class InferenceReader(object):
         self.men_idx = 0
         self.num_mens = len(self.mentions)
         self.epochs = 0
+        self.disambiguations = set()
         #print("[#] Test Mentions : {}".format(self.num_mens))
 
     def get_vector(self, word):
@@ -122,7 +126,9 @@ class InferenceReader(object):
                 words.extend(word_tokenize(sentence[:start]))
                 alias_words = word_tokenize(alias)
 
-                mentions.append((len(words), len(alias_words), entity.split('###'), alias , start+removed, len(link)+4, tokens[-1]))
+                entities = entity.split('###')
+
+                mentions.append((len(words), len(alias_words), entities, alias , start+removed, len(link)+4, tokens[-1]))
 
                 words.extend(alias_words)
                 removed += end + 2
@@ -133,26 +139,27 @@ class InferenceReader(object):
 
         return words,mentions
 
-    def processTestDoc(self, test_mens_file):
+    def processTestDoc(self, article_text):
         self.sentidx2ners = {}
         self.sentences_tokenized = []
         self.sentences = []
         idx = 0
-        with open(test_mens_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-                #if '###' in line:
-                self.sentidx2ners[idx] = []
-                #print(line)
-                words,mentions = self.tokenizeSentence(line)
-                #print(line)
-                self.sentences_tokenized.append(words)
-                self.sentences.append(line)
-                for tuple in mentions:
-                    self.sentidx2ners[idx].append((words, {'start':tuple[0],'end':tuple[0]+tuple[1]-1,'tokens':tuple[3],'entity':tuple[2],'char_start':tuple[4],'link_len':tuple[5],'type':tuple[6]},line))
-                idx += 1
-                if idx > 3000:
-                    return
+        lines = article_text.split('\n')
+
+        for line in lines:
+            line = line.strip()
+            #if '###' in line:
+            self.sentidx2ners[idx] = []
+            #print(line)
+            words,mentions = self.tokenizeSentence(line)
+            #print(line)
+            self.sentences_tokenized.append(words)
+            self.sentences.append(line)
+            for tuple in mentions:
+                self.sentidx2ners[idx].append((words, {'start':tuple[0],'end':tuple[0]+tuple[1]-1,'tokens':tuple[3],'entity':tuple[2],'char_start':tuple[4],'link_len':tuple[5],'type':tuple[6]},line))
+            idx += 1
+            if idx > 3000:
+                return
 
     def convertSent2NerToMentionLines(self):
         '''Convert NERs from document to list of mention strings'''
@@ -186,9 +193,12 @@ class InferenceReader(object):
                             wid = self.knwid2idx[original_wid]
                             wikititle = entity
 
-                        wids.add(wid)
-                        wikititles[original_wid] = wikititle
-                        wikititles[wid] = wikititle
+                            wids.add(wid)
+                            wikititles[original_wid] = wikititle
+                            wikititles[wid] = wikititle
+
+                    if len(wids) > 1:
+                        self.disambiguations_counter += 1
 
                     mention = (ner['start'],ner['end'],ner['tokens'],sentence,cohStr,wids,wikititles,entities,ner['char_start'],ner['link_len'],idx,ner['type'])
                     '''mention = "%s\t%s\t%s" % ("unk_mid", "unk_wid", "unkWT")
@@ -210,7 +220,7 @@ class InferenceReader(object):
         return ' '.join(tokens)
 
     def _read_mention(self):
-        while True:
+        while self.men_idx < len(self.mentions):
             mention = self.mentions[self.men_idx]
             self.men_idx += 1
             candidates = mention.wids
@@ -251,7 +261,7 @@ class InferenceReader(object):
         # First element is always true wid
         (wid_idxs_batch, wid_cprobs_batch) = ([], [])
 
-        while len(left_batch) < self.batch_size:
+        while len(left_batch) < self.batch_size and self.epochs == 0:
             batch_el = len(left_batch)
             m = self._read_mention()
 
@@ -322,7 +332,10 @@ class InferenceReader(object):
 
         coherence_batch = (coh_indices, coh_values, coh_matshape)
 
-        return (left_batch, right_batch,
+        if len(left_batch) == 0:
+            return None
+        else:
+            return (left_batch, right_batch,
                 coherence_batch, wid_idxs_batch, wid_cprobs_batch)
 
     def print_test_batch(self, mention, wid_idxs, wid_cprobs):
@@ -406,19 +419,24 @@ class InferenceReader(object):
         return (batch, lengths)
 
     def _next_padded_batch(self):
-        (left_batch, right_batch,
-         coherence_batch,
-         wid_idxs_batch, wid_cprobs_batch) = self._next_batch()
+        result = self._next_batch()
 
-        (left_batch, left_lengths) = self.pad_batch(left_batch)
-        (right_batch, right_lengths) = self.pad_batch(right_batch)
+        if result != None:
+            (left_batch, right_batch,
+             coherence_batch,
+             wid_idxs_batch, wid_cprobs_batch) = result
 
-        if self.pretrain_wordembed:
-            left_batch = self.embed_batch(left_batch)
-            right_batch = self.embed_batch(right_batch)
+            (left_batch, left_lengths) = self.pad_batch(left_batch)
+            (right_batch, right_lengths) = self.pad_batch(right_batch)
 
-        return (left_batch, left_lengths, right_batch, right_lengths,
-                coherence_batch, wid_idxs_batch, wid_cprobs_batch)
+            if self.pretrain_wordembed:
+                left_batch = self.embed_batch(left_batch)
+                right_batch = self.embed_batch(right_batch)
+
+            return (left_batch, left_lengths, right_batch, right_lengths,
+                    coherence_batch, wid_idxs_batch, wid_cprobs_batch)
+        else:
+            return None
 
     def convert_word2idx(self, word):
         if word in self.word2idx:

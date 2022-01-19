@@ -1,5 +1,5 @@
 """
-Modifications copyright (C) 2020 Michael Strobl
+Modifications copyright (C) 2022 Michael Strobl
 """
 
 import tensorflow as tf
@@ -8,12 +8,12 @@ import sys
 
 from tensorflow.core.protobuf import saver_pb2
 
-from src.entity_linker.evaluation import evaluate_inference, evaluate_types
-from src.entity_linker.models.base import Model
-from src.entity_linker.models.figer_model.context_encoder import ContextEncoderModel
-from src.entity_linker.models.figer_model.coherence_model import CoherenceModel
-from src.entity_linker.models.figer_model.labeling_model import LabelingModel
-from src.entity_linker.models.figer_model.entity_posterior import EntityPosterior
+from entity_linker.evaluation import evaluate_inference, evaluate_types
+from entity_linker.models.base import Model
+from entity_linker.models.figer_model.context_encoder import ContextEncoderModel
+from entity_linker.models.figer_model.coherence_model import CoherenceModel
+from entity_linker.models.figer_model.labeling_model import LabelingModel
+from entity_linker.models.figer_model.entity_posterior import EntityPosterior
 
 
 np.set_printoptions(precision=5)

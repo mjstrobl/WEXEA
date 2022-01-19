@@ -1,3 +1,7 @@
+"""
+Modifications copyright (C) 2022 Michael Strobl
+"""
+
 import os
 import sys
 import numpy as np

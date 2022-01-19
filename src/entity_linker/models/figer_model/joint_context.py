@@ -1,12 +1,12 @@
 """
-Modifications copyright (C) 2020 Michael Strobl
+Modifications copyright (C) 2022 Michael Strobl
 """
 
 import time
 import tensorflow as tf
 import numpy as np
 
-from src.entity_linker.models.base import Model
+from entity_linker.models.base import Model
 
 class JointContextModel(Model):
     """Entity Embeddings and Posterior Calculation"""

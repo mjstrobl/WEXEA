@@ -1,13 +1,13 @@
 """
-Modifications copyright (C) 2020 Michael Strobl
+Modifications copyright (C) 2022 Michael Strobl
 """
 
 import time
 import numpy as np
 #import utils
 #import Mention
-from src.entity_linker.readers import utils
-from src.entity_linker.readers.Mention import Mention
+from entity_linker.readers import utils
+from entity_linker.readers.Mention import Mention
 from nltk.tokenize import word_tokenize
 
 start_word = "<s>"
@@ -76,7 +76,7 @@ class InferenceReader(object):
 
   #*******************      END __init__      *********************************
 
-    def loadTestDoc(self,test_mens_file):
+    def loadTestDoc(self,article_text):
         #print("[#] Test Mentions File : {}".format(test_mens_file))
 
         #print("[#] Loading test file and preprocessing ... ")
@@ -84,7 +84,7 @@ class InferenceReader(object):
         self.disambiguations_counter = 0
 
 
-        self.processTestDoc(test_mens_file)
+        self.processTestDoc(article_text)
         self.mention_lines = self.convertSent2NerToMentionLines()
         self.mentions = []
         for line in self.mention_lines:
@@ -139,26 +139,27 @@ class InferenceReader(object):
 
         return words,mentions
 
-    def processTestDoc(self, test_mens_file):
+    def processTestDoc(self, article_text):
         self.sentidx2ners = {}
         self.sentences_tokenized = []
         self.sentences = []
         idx = 0
-        with open(test_mens_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-                #if '###' in line:
-                self.sentidx2ners[idx] = []
-                #print(line)
-                words,mentions = self.tokenizeSentence(line)
-                #print(line)
-                self.sentences_tokenized.append(words)
-                self.sentences.append(line)
-                for tuple in mentions:
-                    self.sentidx2ners[idx].append((words, {'start':tuple[0],'end':tuple[0]+tuple[1]-1,'tokens':tuple[3],'entity':tuple[2],'char_start':tuple[4],'link_len':tuple[5],'type':tuple[6]},line))
-                idx += 1
-                if idx > 3000:
-                    return
+        lines = article_text.split('\n')
+
+        for line in lines:
+            line = line.strip()
+            #if '###' in line:
+            self.sentidx2ners[idx] = []
+            #print(line)
+            words,mentions = self.tokenizeSentence(line)
+            #print(line)
+            self.sentences_tokenized.append(words)
+            self.sentences.append(line)
+            for tuple in mentions:
+                self.sentidx2ners[idx].append((words, {'start':tuple[0],'end':tuple[0]+tuple[1]-1,'tokens':tuple[3],'entity':tuple[2],'char_start':tuple[4],'link_len':tuple[5],'type':tuple[6]},line))
+            idx += 1
+            if idx > 3000:
+                return
 
     def convertSent2NerToMentionLines(self):
         '''Convert NERs from document to list of mention strings'''

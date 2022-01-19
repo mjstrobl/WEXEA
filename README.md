@@ -26,23 +26,9 @@ java -mx16g -cp "<path to corenlp files>" edu.stanford.nlp.pipeline.StanfordCore
 
 ## Entity Linker
 
-<<<<<<< HEAD
-(English only, not relevant for other languages)
-=======
-1. Install requirements from requirements_basic.txt
-2. In config/config.json, provide path of latest wiki dump (xml file) and output path (make sure the output folder does not exist yet, it will be created).
-3. Make annotate_basic.sh executable: "chmod 755 annotate_basic.sh"
-4. Run annotate_basic.sh with ./annotate_basic.sh
->>>>>>> master
-
 Entity Linker including models used from https://github.com/nitishgupta/neural-el. 
 
 Download resources from repository and adjust path to resources folder in ```src/entity_linker/configs/config.ini```.
-
-<<<<<<< HEAD
-=======
-This version uses the neural Entity Linker from https://github.com/nitishgupta/neural-el with small modifications (mainly a predefined set of candidates per entity mention with entities linked in the current article is used and the NER module is removed).
->>>>>>> master
 
 ## Run WEXEA
 

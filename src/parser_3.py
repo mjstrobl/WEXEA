@@ -8,7 +8,7 @@ from utils import create_file_name_and_directory, jsonKeys2int, find_positions_o
 
 from stanza.server import CoreNLPClient, StartServer
 
-from language_specifics import IGNORED_NAMESPACES
+from language_variables import IGNORED_NAMESPACES
 
 ARTICLE_OUTPUTPATH = "articles_3"
 

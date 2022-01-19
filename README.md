@@ -35,11 +35,11 @@ Download resources from repository and adjust path to resources folder in ```src
 
 ## Run WEXEA
 
-
-1. Install requirements from requirements.txt
-2. In config/config.json, provide path of latest wiki dump (xml file) and output path (make sure the output folder does not exist yet, it will be created).
-3. Make annotate.sh executable: "chmod 755 annotate.sh"
-4. Run annotate.sh with ./annotate.sh
+1. Change language specific keyword variables in src/language_variables.py, depending on Wikipedia dump language.
+2. Install requirements from requirements.txt
+3. In config/config.json, provide path of latest wiki dump (xml file) and output path (make sure the output folder does not exist yet, it will be created).
+4. Make annotate.sh executable: "chmod 755 annotate.sh"
+5. Run annotate.sh with ./annotate.sh
 
 ## With neural Entity Linker (English only)
 
@@ -73,18 +73,3 @@ Run CoreNLP NER and find other entities based on alias/redirect dictionaries.
 ### Parser 4 (~2h / ~2,700,00 articles to process)
 
 Run co-reference resolution and EL.
-
-## Citation (bibtex)
-
-@InProceedings{strobl-trabelsi-zaiane:2020:LREC,
-  author    = {Strobl, Michael  and  Trabelsi, Amine  and  Zaiane, Osmar},
-  title     = {WEXEA: Wikipedia EXhaustive Entity Annotation},
-  booktitle      = {Proceedings of The 12th Language Resources and Evaluation Conference},
-  month          = {May},
-  year           = {2020},
-  address        = {Marseille, France},
-  publisher      = {European Language Resources Association},
-  pages     = {1951--1958},
-  url       = {https://www.aclweb.org/anthology/2020.lrec-1.240}
-}
-

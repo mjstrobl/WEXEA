@@ -6,7 +6,7 @@ import time
 import datetime
 from utils import current_milli_time, RE_LINKS, create_file_name_and_directory
 
-from language_specifics import RE_CATEGORY_REDIRECT, IGNORED_NAMESPACES, CATEGORY, LIST, REDIRECT
+from language_variables import RE_CATEGORY_REDIRECT, IGNORED_NAMESPACES, CATEGORY, LIST, REDIRECT
 
 ARTICLE_OUTPUTPATH = "articles_1"
 

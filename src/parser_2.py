@@ -6,7 +6,7 @@ import time
 import datetime
 from utils import find_categories, find_entities, add_disambiguation, create_file_name_and_directory, remove_notes, find_same_entity_mentions, remove_external_links, clean_text, remove_files, remove_galleries, remove_tables, remove_templates, remove_irrelevant_sections
 
-from language_specifics import IGNORED_NAMESPACES, RE_STUB, RE_HUMAN_DISAMBIGUATIONS, RE_GEO_DISAMBIGUATIONS, RE_NUMBER_DISAMBIGUATIONS, \
+from language_variables import IGNORED_NAMESPACES, RE_STUB, RE_HUMAN_DISAMBIGUATIONS, RE_GEO_DISAMBIGUATIONS, RE_NUMBER_DISAMBIGUATIONS, \
     RE_DISAMBIGUATIONS, GIVEN_NAMES, SURNAMES, INFOBOX
 
 ARTICLE_OUTPUTPATH = "articles_2"

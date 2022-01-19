@@ -3,7 +3,7 @@ import os
 import time
 import json
 
-from language_specifics import RE_REMOVE_SECTIONS, RE_CATEGORIES, CONVERT_TEMPLATE_SEPARATORS, RE_FILES, LIST, FILE, IMAGE, TEMPLATE_QUOTE, \
+from language_variables import RE_REMOVE_SECTIONS, RE_CATEGORIES, CONVERT_TEMPLATE_SEPARATORS, RE_FILES, LIST, FILE, IMAGE, TEMPLATE_QUOTE, \
     LANG, AS_OF, CONVERT, TEMPLATE, DASH, INFOBOX
 
 current_milli_time = lambda: int(round(time.time() * 1000))

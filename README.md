@@ -13,7 +13,7 @@ WEXEA for...
 1. English: https://drive.google.com/file/d/1xeybIqfctg4nKcwTwibQsZrG1bhqnL4j/view?usp=sharing
 2. German: (coming soon)
 3. French: (coming soon)
-4. Spanish: (coming soon)
+4. Spanish: https://drive.google.com/file/d/1mBVHMEzsoyJdg8i-_xwu7OZSfeXcs8pI/view?usp=sharing
 
 ## Start CoreNLP toolkit
 

@@ -19,6 +19,13 @@ RE_TABLE = re.compile(r'\{\|(.*?)\|\}', re.DOTALL | re.UNICODE | re.MULTILINE)
 RE_INFO_OR_TABLE_LINE = re.compile(r'^[\|].*\n?', flags=re.MULTILINE)
 RE_COMMENTS = re.compile(r'<!--.*?-->', re.DOTALL | re.UNICODE)
 RE_NEWLINES = re.compile(r'\n{2,}', re.DOTALL | re.UNICODE)
+CLEANUP = [(re.compile(r'\(( ?(;|,) ?)*\) ?', re.DOTALL | re.UNICODE),""),
+           (re.compile(r'\(( ?(;|,) ?)+', re.DOTALL | re.UNICODE),"("),
+           (re.compile(r' ,', re.DOTALL | re.UNICODE),","),
+           (re.compile(r' \)', re.DOTALL | re.UNICODE),")"),
+           (re.compile(r',,+ ', re.DOTALL | re.UNICODE),", "),
+           (re.compile(r',\)', re.DOTALL | re.UNICODE),")"),
+           (re.compile(r';\)', re.DOTALL | re.UNICODE),")")]
 RE_TAGS = re.compile(r'<(.*?)>', re.DOTALL | re.UNICODE)
 RE_COMMENTS = re.compile(r'(\n\[\[[a-z][a-z][\w-]*:[^:\]]+\]\])+$', re.UNICODE)
 RE_EXTERNAL = re.compile(r'(?<=(\n[ ])|(\n\n)|([ ]{2})|(.\n)|(.\t))(\||\!)([^[\]\n]*?\|)*', re.UNICODE)

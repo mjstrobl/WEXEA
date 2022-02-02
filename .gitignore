@@ -134,3 +134,5 @@ dmypy.json
 config/config.json
 *logger.txt
 *.zip
+new_src/ds*.py
+*.png

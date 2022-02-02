@@ -4,7 +4,7 @@ import json
 import time
 import datetime
 import gender_guesser.detector as gender
-from utils import create_file_name_and_directory, create_filename, RE_LINKS
+from utils import create_file_name_and_directory, create_filename, RE_LINKS, CLEANUP
 from entity_linker.readers.inference_reader import InferenceReader
 from entity_linker.models.figer_model.el_model import ELModel
 from entity_linker.readers.config import Config
@@ -29,6 +29,20 @@ def process_article(text, title, corefs, aliases_reverse, coref_assignments, rea
         if line.startswith('='):
             complete_content += '\n' + line
             continue
+
+        while True:
+            found = False
+            for tuple in CLEANUP:
+                # re.sub(tuple[0],tuple[1])
+                match = re.search(tuple[0], line)
+                if match:
+                    found = True
+                    start = match.start()
+                    end = match.end()
+                    line = line[:start] + tuple[1] + line[end:]
+
+            if not found:
+                break
 
         positions = []
         el_idxs = []

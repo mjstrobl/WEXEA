@@ -11,8 +11,8 @@ Annotations follow the Wikipedia conventions, just the type of the annotation is
 WEXEA for...
 
 1. English: https://drive.google.com/file/d/1xeybIqfctg4nKcwTwibQsZrG1bhqnL4j/view?usp=sharing
-2. German: (coming soon)
-3. French: (coming soon)
+2. German: https://drive.google.com/file/d/1qX_ya84d5xKjlLTlkivxA5i_R7KtFqvW/view?usp=sharing
+3. French: https://drive.google.com/file/d/193fSeHxLNnNtbCz2kKtlCOhbXJ4Rcdr_/view?usp=sharing
 4. Spanish: https://drive.google.com/file/d/1mBVHMEzsoyJdg8i-_xwu7OZSfeXcs8pI/view?usp=sharing
 
 ## Start CoreNLP toolkit

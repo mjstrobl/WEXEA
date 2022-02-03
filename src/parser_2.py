@@ -203,7 +203,7 @@ def merge_aliases(partial_aliases, aliases):
 def merge_links(partial_dict, dict):
     for orig_key in partial_dict:
         entities = partial_dict[orig_key]
-        key = int(key)
+        key = int(orig_key)
         if key not in dict:
             dict[key] = {}
         for entity in entities:

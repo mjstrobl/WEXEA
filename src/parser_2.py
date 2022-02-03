@@ -201,15 +201,15 @@ def merge_aliases(partial_aliases, aliases):
             aliases[stripped_alias][entity] += partial_aliases[alias][entity]
 
 def merge_links(partial_dict, dict):
-    for key in partial_dict:
-        entities = partial_dict[key]
+    for orig_key in partial_dict:
+        entities = partial_dict[orig_key]
         key = int(key)
         if key not in dict:
             dict[key] = {}
         for entity in entities:
             if entity not in dict[key]:
                 dict[key][entity] = 0
-            dict[key][entity] += partial_dict[key][entity]
+            dict[key][entity] += partial_dict[orig_key][entity]
 
 def merge_all_dictionaries(all_titles,title2Id, num_processes, dictionarypath):
     aliases = {}

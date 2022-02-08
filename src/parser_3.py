@@ -419,7 +419,7 @@ if (__name__ == "__main__"):
     #entities_sorted = json.load(open(dictionarypath + 'entities_sorted.json'))
     disambiguations_human = json.load(open(dictionarypath + 'disambiguations_human.json'))
     disambiguations_geo = json.load(open(dictionarypath + 'disambiguations_geo.json'))
-    title2Id = json.load(open(dictionarypath + 'title2Id_pruned.json'))
+    title2Id = json.load(open(dictionarypath + 'title2id_pruned.json'))
     links = json.load(open(dictionarypath + 'links_pruned.json'), object_hook=jsonKeys2int)
     filename2title = json.load(open(dictionarypath + 'filename2title_2.json'))
     filenames = list(filename2title.keys())

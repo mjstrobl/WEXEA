@@ -1,5 +1,5 @@
 unidecode
 gender-guesser
 yattag
-protobuf==3.6.0
+protobuf==3.15.0
 tensorflow==2.4.1

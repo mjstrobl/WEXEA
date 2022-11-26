@@ -11,7 +11,7 @@ outputpath = config['outputpath']
 #outputpath = outputpath.replace('/final','')
 
 TITLE2FILENAME_PATH = outputpath + "dictionaries/title2filename.json"
-TITLE2ID_PATH = outputpath + "dictionaries/title2Id.json"
+TITLE2ID_PATH = outputpath + "dictionaries/title2id.json"
 WIKILINK = 'https://en.wikipedia.org/?curid='
 
 FILE = 'frontend.html'
@@ -33,12 +33,17 @@ def process_line(line,doc, tag, text):
 
             tokens = mention.split('|')
             entity = tokens[0]
-            alias = tokens[1]
-            type = tokens[-1]
 
+            if len(tokens) > 2:
+                alias = tokens[1]
+                type = tokens[-1]
+            else:
+                if len(tokens) == 2:
+                    alias = tokens[1]
+                else:
+                    alias = entity
+                type = "ANNOTATION"
 
-            if len(tokens) == 2:
-                alias = tokens[0]
 
             if entity in title2id and len(tokens) > 2:
                 id = title2id[entity]
@@ -50,6 +55,19 @@ def process_line(line,doc, tag, text):
                     klass = 'annotation'
 
                 with tag('a',('href',link),('target','_blank'),klass=klass):
+                    if len(before.strip()) == 0:
+                        text(before + alias)
+                    else:
+                        text(alias)
+            elif len(tokens) <= 2:
+                link = WIKILINK + str(12)
+                klass = 'annotation'
+                if type == 'RARE_ANNOTATION':
+                    klass = 'annotation'
+                elif type == 'ANNOTATION':
+                    klass = 'annotation'
+
+                with tag('a', ('href', link), ('target', '_blank'), klass=klass):
                     if len(before.strip()) == 0:
                         text(before + alias)
                     else:
@@ -82,19 +100,32 @@ def create_html(title2filename,title):
     else:
         with tag('h1'):
             text(title)
-        with open(title2filename[title].replace("original_articles","final_articles")) as f:
+        with open(title2filename[title].replace("articles_final","articles_2")) as f:
+            content = []
+            stop = False
             for line in f:
                 line = line.strip()
                 if line.startswith('==='):
+                    if len(content) > 0:
+                        create_html_paragraph(' '.join(content), doc, tag, text)
+                        content = []
+
+
                     line = line.replace('=','')
                     with tag('h4'):
                         text(line)
                 elif line.startswith('=='):
+                    if len(content) > 0:
+                        create_html_paragraph(' '.join(content), doc, tag, text)
+                        content = []
                     line = line.replace('=', '')
                     with tag('h2'):
                         text(line)
-                else:
-                    create_html_paragraph(line, doc, tag, text)
+                elif not stop:
+                    content.append(line)
+                    if 'was born at' in line:
+                        stop = True
+                    #create_html_paragraph(line, doc, tag, text)
 
     result = indent(doc.getvalue())
     return result

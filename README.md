@@ -43,6 +43,16 @@ Download resources from repository and adjust path to resources folder in ```src
 
 server.py starts a server and opens a website that can be used to visualize an article with Wikipedia links (blue) and unknown entities (green).
 
+
+## WiNER evaluation
+
+1. Create directory 'wexea_evaluation'.
+2. Adjust directory names for output as well as dictionaries in src/winer.py and src/evaluation.py.
+3. Run winer.py in order to create a sample from WiNER's as well as WEXEA's articles.
+4. Run src/evaluation.py in order to create a file per article, which consists of WiNER addtional annotations (left) and WEXEA's additional annotations (right). Original annotations are removed in order to make the file more readable.
+
+Files we used for evaluation (see Michael Strobl's PhD thesis), can be found in the data folder.
+
 ## Hardware requirements
 
 32GB of RAM are required (it may work with 16, but not tested) and it should take around 2-3d to finish with a full English Wikipedia dump (less for other languages).

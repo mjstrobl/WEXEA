@@ -17,8 +17,8 @@ WEXEA for...
 
 These datasets can be used as-is. Each archive contains a single file with each article concatenated. Articles themselves contain original as well as new annotations of the following format:
 
-1. [[<article name>|<text alias>|<annotation type>]]
-2. [[<text alias>|<CoreNLP NER type>]]
+1. [[article name|text alias|annotation type]]
+2. [[text alias|CoreNLP NER type]]
 
 The annotation type of format 1 can be ignored (type "annotation" corresponds to original annotations, all others are new). Annotations of format 2 are CoreNLP annotations without corresponding Wikipedia article. 
 

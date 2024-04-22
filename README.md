@@ -89,8 +89,10 @@ Run co-reference resolution and EL.
 Please cite the following papers:
 
 Original WEXEA publication:
+
 Strobl, Michael, Amine Trabelsi, and Osmar R. Zaïane. "WEXEA: Wikipedia exhaustive entity annotation." Proceedings of the Twelfth Language Resources and Evaluation Conference. 2020.
 
 Updated version (from which the linked datasets above are derived):
+
 Strobl, Michael, Amine Trabelsi, and Osmar R. Zaiane. "Enhanced Entity Annotations for Multilingual Corpora." Proceedings of the Thirteenth Language Resources and Evaluation Conference. 2022.
 

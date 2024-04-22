@@ -76,10 +76,10 @@ Removes most Wiki markup, irrelevant articles (e.g. lists or stubs), extracts al
 
 A number of processes can be set to speed up the parsing process of all articles. However, each process consumes around 7.5GB of memory.
 
-### Parser 3 (~2 days with 6 processes / ~2,700,00 articles to process)
+### Parser 3 (~2 days with 6 processes / ~2,700,000 articles to process)
 
 Run CoreNLP NER and find other entities based on alias/redirect dictionaries.
 
-### Parser 4 (~2h / ~2,700,00 articles to process)
+### Parser 4 (~2h / ~2,700,000 articles to process)
 
 Run co-reference resolution and EL.

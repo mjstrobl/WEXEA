@@ -10,10 +10,10 @@ Annotations follow the Wikipedia conventions, just the type of the annotation is
 
 WEXEA for...
 
-1. English: [https://drive.google.com/file/d/1xeybIqfctg4nKcwTwibQsZrG1bhqnL4j/view?usp=sharing](https://drive.google.com/file/d/1ceMqZv_u0SqY_5fWu3TnD1_EXN9L9Rdk/view?usp=sharing)
-2. German: https://drive.google.com/file/d/1qX_ya84d5xKjlLTlkivxA5i_R7KtFqvW/view?usp=sharing
-3. French: https://drive.google.com/file/d/193fSeHxLNnNtbCz2kKtlCOhbXJ4Rcdr_/view?usp=sharing
-4. Spanish: https://drive.google.com/file/d/1mBVHMEzsoyJdg8i-_xwu7OZSfeXcs8pI/view?usp=sharing
+1. English: https://drive.google.com/file/d/1Cd7KEzzjl5g83OuUNKASnDzn_yEDD0mE/view?usp=sharing
+2. German: https://drive.google.com/file/d/1-xRbcwMcOnabljqhq9ilzMurZn7FnNT4/view?usp=sharing
+3. French: https://drive.google.com/file/d/1AHAfBnbg7UW7tr3hdRqIpA6RWld9Z6C0/view?usp=sharing
+4. Spanish: https://drive.google.com/file/d/1DIqNdZ5rECalYhGmr6AhSwO55671Ivic/view?usp=sharing
 
 These datasets can be used as-is. Each archive contains a single file with each article concatenated. Articles themselves contain original as well as new annotations of the following format:
 

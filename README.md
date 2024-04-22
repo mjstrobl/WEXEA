@@ -83,3 +83,14 @@ Run CoreNLP NER and find other entities based on alias/redirect dictionaries.
 ### Parser 4 (~2h / ~2,700,000 articles to process)
 
 Run co-reference resolution and EL.
+
+## Citation
+
+Please cite the following papers:
+
+Original WEXEA publication:
+Strobl, Michael, Amine Trabelsi, and Osmar R. Zaïane. "WEXEA: Wikipedia exhaustive entity annotation." Proceedings of the Twelfth Language Resources and Evaluation Conference. 2020.
+
+Updated version (from which the linked datasets above are derived):
+Strobl, Michael, Amine Trabelsi, and Osmar R. Zaiane. "Enhanced Entity Annotations for Multilingual Corpora." Proceedings of the Thirteenth Language Resources and Evaluation Conference. 2022.
+
